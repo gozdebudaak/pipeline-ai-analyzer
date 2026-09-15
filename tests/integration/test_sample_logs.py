@@ -59,8 +59,10 @@ def test_chain_on_sample_log(
     processed = LogProcessor().process(redacted.text)
     classification = FailureClassifier().classify(processed.error_lines)
 
-    # 1. nothing sensitive survives to the text that would reach the LLM
+    # 1. nothing sensitive survives. redacted.text is the superset (strongest check);
+    #    excerpt is the boundary: the exact text that would reach the LLM.
     for secret in secrets:
+        assert secret not in redacted.text
         assert secret not in processed.excerpt
     assert redacted.total >= 1
 
