@@ -9,6 +9,7 @@ and validated once at startup. Anything that differs between environments
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AppEnv = Literal["development", "test", "production"]
@@ -26,6 +27,12 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     app_env: AppEnv = "development"
     log_level: LogLevel = "INFO"
+
+    # LLM provider. SecretStr prints as ********** in logs and reprs.
+    openai_api_key: SecretStr | None = None
+    openai_model: str = "gpt-5.4-mini"
+    llm_timeout_seconds: float = 60.0
+    llm_max_retries: int = 2  # only for transient failures (network, 429, 5xx)
 
     @property
     def is_production(self) -> bool:
