@@ -61,6 +61,26 @@ uv run mypy app
 `uv run <cmd>` executes `<cmd>` inside the project's virtual environment, so
 you never need to activate `.venv` manually.
 
+## Running with Docker
+
+```bash
+docker compose up --build        # build the image and start the API on :8000
+docker compose ps                # STATUS should show "(healthy)"
+curl -i http://127.0.0.1:8000/health
+docker compose down
+```
+
+The image is a two-stage build: dependencies are installed with `uv` in a
+builder stage, and only the resulting virtual environment and source are
+copied into a `python:3.12-slim` runtime image that runs as the unprivileged
+`app` user. A `HEALTHCHECK` polls `/health`; Compose reports the container
+as healthy once it passes.
+
+> macOS note: if `docker` is not found after installing Docker Desktop, open
+> Docker Desktop → Settings → Advanced and enable the system-wide CLI
+> symlinks, or add `/Applications/Docker.app/Contents/Resources/bin` to your
+> `PATH` in `~/.zshrc`.
+
 ## Project layout
 
 ```text

@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    image: pipeline-ai-analyzer:dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false   # .env.example defaults are enough for MVP 0
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    restart: unless-stopped
