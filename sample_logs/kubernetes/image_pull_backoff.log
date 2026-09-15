@@ -1,0 +1,47 @@
+[Pipeline] { (Deploy to staging)
+[Pipeline] sh
+[2026-09-15T09:30:01.000Z] + export KUBECONFIG=/var/lib/jenkins/.kube/staging
+[2026-09-15T09:30:01.001Z] + export KUBE_TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYmMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwic3ViIjoiY2kifQ.QmFzZTY0U2lnbmF0dXJlR29lc0hlcmVBbmRJdElzTG9uZw
+[2026-09-15T09:30:01.002Z] + kubectl --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhYmMifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwic3ViIjoiY2kifQ.QmFzZTY0U2lnbmF0dXJlR29lc0hlcmVBbmRJdElzTG9uZw -n payments set image deployment/payment-service payment-service=registry.example.com/platform/payment-service:1.4.3
+[2026-09-15T09:30:01.640Z] deployment.apps/payment-service image updated
+[2026-09-15T09:30:01.641Z] + kubectl -n payments rollout status deployment/payment-service --timeout=120s
+[2026-09-15T09:30:01.900Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:30:11.902Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:30:21.903Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:30:31.905Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:30:41.906Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:30:51.908Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:01.909Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:11.910Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:21.911Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:31.912Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:41.913Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:31:51.914Z] Waiting for deployment "payment-service" rollout to finish: 1 out of 3 new replicas have been updated...
+[2026-09-15T09:32:01.915Z] error: timed out waiting for the condition
+[2026-09-15T09:32:01.920Z] + kubectl -n payments get pods -l app=payment-service
+[2026-09-15T09:32:02.210Z] NAME                               READY   STATUS             RESTARTS   AGE
+[2026-09-15T09:32:02.210Z] payment-service-5c8d7f9b4-2xk9p    1/1     Running            0          3d
+[2026-09-15T09:32:02.210Z] payment-service-5c8d7f9b4-7mq3z    1/1     Running            0          3d
+[2026-09-15T09:32:02.210Z] payment-service-5c8d7f9b4-p4w8n    1/1     Running            0          3d
+[2026-09-15T09:32:02.210Z] payment-service-7b9c6d8e5-hx4tq    0/1     ImagePullBackOff   0          2m1s
+[2026-09-15T09:32:02.215Z] + kubectl -n payments describe pod payment-service-7b9c6d8e5-hx4tq
+[2026-09-15T09:32:02.540Z] Name:             payment-service-7b9c6d8e5-hx4tq
+[2026-09-15T09:32:02.540Z] Namespace:        payments
+[2026-09-15T09:32:02.540Z] Node:             staging-worker-2/10.20.1.12
+[2026-09-15T09:32:02.540Z] Containers:
+[2026-09-15T09:32:02.540Z]   payment-service:
+[2026-09-15T09:32:02.540Z]     Image:          registry.example.com/platform/payment-service:1.4.3
+[2026-09-15T09:32:02.540Z]     State:          Waiting
+[2026-09-15T09:32:02.540Z]       Reason:       ImagePullBackOff
+[2026-09-15T09:32:02.540Z] Events:
+[2026-09-15T09:32:02.540Z]   Type     Reason     Age                 From               Message
+[2026-09-15T09:32:02.540Z]   ----     ------     ----                ----               -------
+[2026-09-15T09:32:02.540Z]   Normal   Scheduled  2m1s                default-scheduler  Successfully assigned payments/payment-service-7b9c6d8e5-hx4tq to staging-worker-2
+[2026-09-15T09:32:02.540Z]   Normal   Pulling    28s (x4 over 2m)    kubelet            Pulling image "registry.example.com/platform/payment-service:1.4.3"
+[2026-09-15T09:32:02.540Z]   Warning  Failed     27s (x4 over 2m)    kubelet            Failed to pull image "registry.example.com/platform/payment-service:1.4.3": rpc error: code = NotFound desc = failed to pull and unpack image "registry.example.com/platform/payment-service:1.4.3": failed to resolve reference "registry.example.com/platform/payment-service:1.4.3": registry.example.com/platform/payment-service:1.4.3: not found
+[2026-09-15T09:32:02.540Z]   Warning  Failed     27s (x4 over 2m)    kubelet            Error: ErrImagePull
+[2026-09-15T09:32:02.540Z]   Normal   BackOff    3s (x6 over 119s)   kubelet            Back-off pulling image "registry.example.com/platform/payment-service:1.4.3"
+[2026-09-15T09:32:02.540Z]   Warning  Failed     3s (x6 over 119s)   kubelet            Error: ImagePullBackOff
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

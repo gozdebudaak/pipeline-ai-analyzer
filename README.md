@@ -7,7 +7,9 @@ relevant error sections from logs, identifies probable root causes and suggests
 remediation steps. Designed as a production-oriented platform component, not a
 thin LLM wrapper.
 
-> Status: **MVP 0 — project foundation** (no AI functionality yet).
+> Status: **MVP 1 in progress** — deterministic services (secret redaction,
+> log preprocessing, failure classification) are done and tested; the LLM
+> layer and the `/api/v1/analyze` endpoint are next.
 
 ## Roadmap
 
@@ -96,16 +98,21 @@ with `UV_FROZEN=1`, so CI installs exactly what `uv.lock` pins.
 
 ```text
 app/
-  api/middleware.py   correlation ID + request logging
-  api/routes/         HTTP endpoints
-  core/config.py      settings from environment variables (pydantic-settings)
-  core/logging.py     JSON log formatter with correlation ID
-  main.py             FastAPI application factory
+  api/middleware.py            correlation ID + request logging
+  api/routes/                  HTTP endpoints
+  core/config.py               settings from environment variables (pydantic-settings)
+  core/logging.py              JSON log formatter with correlation ID
+  services/secret_redactor.py  removes passwords, tokens, keys before anything reaches an LLM
+  services/log_processor.py    normalises logs and extracts error regions within a budget
+  services/failure_classifier.py  weighted rule table mapping error lines to a category
+  main.py                      FastAPI application factory
+sample_logs/                   realistic failure logs (Docker, Kubernetes, Maven, Artifactory)
+                               with embedded fake secrets; used by the chain tests
 tests/
-  conftest.py         shared fixtures (TestClient)
-  unit/               fast, isolated tests
-  integration/        tests that exercise the HTTP layer
-.github/workflows/    CI pipeline
+  conftest.py                  shared fixtures (TestClient)
+  unit/                        fast, isolated tests (one file per service)
+  integration/                 HTTP layer tests and the sample-log chain test
+.github/workflows/             CI pipeline
 ```
 
 Further directories (`services/`, `llm/`, `integrations/`, `migrations/`,

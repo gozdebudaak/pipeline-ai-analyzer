@@ -1,0 +1,18 @@
+[Pipeline] { (Publish artifact)
+[Pipeline] sh
+[2026-09-15T09:50:10.000Z] + ARTIFACT=target/payment-service-1.4.2.jar
+[2026-09-15T09:50:10.001Z] + TARGET=https://artifactory.example.com/artifactory/libs-release-local/com/example/payment-service/1.4.2/payment-service-1.4.2.jar
+[2026-09-15T09:50:10.002Z] + curl -sS -f -u ci-payment:AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR -H 'X-JFrog-Art-Api: AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR' -T target/payment-service-1.4.2.jar https://artifactory.example.com/artifactory/libs-release-local/com/example/payment-service/1.4.2/payment-service-1.4.2.jar
+[2026-09-15T09:50:10.812Z] curl: (22) The requested URL returned error: 403
+[2026-09-15T09:50:10.815Z] + curl -sS -u ci-payment:AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR -X PUT -T target/payment-service-1.4.2.jar https://artifactory.example.com/artifactory/libs-release-local/com/example/payment-service/1.4.2/payment-service-1.4.2.jar
+[2026-09-15T09:50:11.402Z] {
+[2026-09-15T09:50:11.402Z]   "errors" : [ {
+[2026-09-15T09:50:11.402Z]     "status" : 403,
+[2026-09-15T09:50:11.402Z]     "message" : "Forbidden: user 'ci-payment' lacks deploy permission on repository 'libs-release-local' (path com/example/payment-service/1.4.2/payment-service-1.4.2.jar)"
+[2026-09-15T09:50:11.402Z]   } ]
+[2026-09-15T09:50:11.402Z] }
+[2026-09-15T09:50:11.405Z] + echo 'Upload failed'
+[2026-09-15T09:50:11.405Z] Upload failed
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

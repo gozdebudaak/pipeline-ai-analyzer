@@ -1,0 +1,46 @@
+[Pipeline] { (Build Image)
+[Pipeline] sh
+[2026-09-15T09:12:40.001Z] + export DOCKER_BUILDKIT=1
+[2026-09-15T09:12:40.002Z] + docker login -u ci-bot -p ghp_Xk92JqLmN3vP8sT4wR7yB1zC5dF6gH0aE2iU registry.example.com
+[2026-09-15T09:12:40.480Z] WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+[2026-09-15T09:12:40.912Z] Login Succeeded
+[2026-09-15T09:12:40.915Z] + docker build -t registry.example.com/platform/payment-service:1.4.2 .
+[2026-09-15T09:12:41.100Z] #0 building with "default" instance using docker driver
+[2026-09-15T09:12:41.100Z]
+[2026-09-15T09:12:41.100Z] #1 [internal] load build definition from Dockerfile
+[2026-09-15T09:12:41.101Z] #1 transferring dockerfile: 1.02kB done
+[2026-09-15T09:12:41.101Z] #1 DONE 0.0s
+[2026-09-15T09:12:41.101Z]
+[2026-09-15T09:12:41.101Z] #2 [internal] load metadata for docker.io/library/eclipse-temurin:21-jre-alpine
+[2026-09-15T09:12:41.830Z] #2 DONE 0.7s
+[2026-09-15T09:12:41.830Z]
+[2026-09-15T09:12:41.830Z] #3 [internal] load .dockerignore
+[2026-09-15T09:12:41.830Z] #3 transferring context: 112B done
+[2026-09-15T09:12:41.830Z] #3 DONE 0.0s
+[2026-09-15T09:12:41.831Z]
+[2026-09-15T09:12:41.831Z] #4 [1/4] FROM docker.io/library/eclipse-temurin:21-jre-alpine@sha256:4c1f9a0f2b6f0c2f1a2e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3
+[2026-09-15T09:12:41.831Z] #4 CACHED
+[2026-09-15T09:12:41.831Z]
+[2026-09-15T09:12:41.831Z] #5 [internal] load build context
+[2026-09-15T09:12:41.902Z] #5 transferring context: 2.31kB done
+[2026-09-15T09:12:41.902Z] #5 DONE 0.1s
+[2026-09-15T09:12:41.902Z]
+[2026-09-15T09:12:41.902Z] #6 [2/4] WORKDIR /app
+[2026-09-15T09:12:41.902Z] #6 CACHED
+[2026-09-15T09:12:41.902Z]
+[2026-09-15T09:12:41.903Z] #7 [3/4] COPY target/payment-service-1.4.2.jar /app/app.jar
+[2026-09-15T09:12:41.950Z] #7 ERROR: failed to calculate checksum of ref 7b3c9e1a-4f2d-4c8b-9e6a-1d2f3a4b5c6d::k9x2m: "/target/payment-service-1.4.2.jar": not found
+[2026-09-15T09:12:41.950Z] ------
+[2026-09-15T09:12:41.950Z]  > [3/4] COPY target/payment-service-1.4.2.jar /app/app.jar:
+[2026-09-15T09:12:41.950Z] ------
+[2026-09-15T09:12:41.951Z] Dockerfile:5
+[2026-09-15T09:12:41.951Z] --------------------
+[2026-09-15T09:12:41.951Z]    3 |     WORKDIR /app
+[2026-09-15T09:12:41.951Z]    4 |
+[2026-09-15T09:12:41.951Z]    5 | >>> COPY target/payment-service-1.4.2.jar /app/app.jar
+[2026-09-15T09:12:41.951Z]    6 |     EXPOSE 8080
+[2026-09-15T09:12:41.951Z] --------------------
+[2026-09-15T09:12:41.951Z] ERROR: failed to solve: failed to compute cache key: failed to calculate checksum of ref 7b3c9e1a-4f2d-4c8b-9e6a-1d2f3a4b5c6d::k9x2m: "/target/payment-service-1.4.2.jar": not found
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

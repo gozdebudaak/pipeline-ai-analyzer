@@ -1,0 +1,57 @@
+Started by user jenkins-bot
+Running as SYSTEM
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on build-agent-03 in /var/lib/jenkins/workspace/payment-service
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] checkout
+[2026-09-15T08:41:02.113Z] Cloning the remote Git repository
+[2026-09-15T08:41:02.114Z] Cloning repository https://git.example.com/platform/payment-service.git
+[2026-09-15T08:41:04.882Z] Checking out Revision 9f1c2ab3 (refs/remotes/origin/main)
+[Pipeline] }
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] withCredentials
+[2026-09-15T08:41:05.001Z] Masking supported pattern matches of $ARTIFACTORY_PASSWORD
+[Pipeline] sh
+[2026-09-15T08:41:05.210Z] + export ARTIFACTORY_USER=ci-payment
+[2026-09-15T08:41:05.210Z] + export ARTIFACTORY_PASSWORD=AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR
+[2026-09-15T08:41:05.211Z] + mvn -B -s settings.xml -Dmaven.repo.local=/var/lib/jenkins/.m2 clean package
+[2026-09-15T08:41:06.402Z] [INFO] Scanning for projects...
+[2026-09-15T08:41:06.930Z] [INFO]
+[2026-09-15T08:41:06.930Z] [INFO] ------------------< com.example:payment-service >-------------------
+[2026-09-15T08:41:06.931Z] [INFO] Building payment-service 1.4.2
+[2026-09-15T08:41:06.931Z] [INFO] --------------------------------[ jar ]---------------------------------
+[2026-09-15T08:41:07.115Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/org/springframework/boot/spring-boot-starter-parent/3.3.2/spring-boot-starter-parent-3.3.2.pom
+[2026-09-15T08:41:07.401Z] [INFO] Downloaded from artifactory: https://artifactory.example.com/artifactory/libs-release/org/springframework/boot/spring-boot-starter-parent/3.3.2/spring-boot-starter-parent-3.3.2.pom (12 kB at 41 kB/s)
+[2026-09-15T08:41:07.455Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/org/springframework/boot/spring-boot-starter-web/3.3.2/spring-boot-starter-web-3.3.2.pom
+[2026-09-15T08:41:07.612Z] [INFO] Downloaded from artifactory: https://artifactory.example.com/artifactory/libs-release/org/springframework/boot/spring-boot-starter-web/3.3.2/spring-boot-starter-web-3.3.2.pom (3.1 kB at 20 kB/s)
+[2026-09-15T08:41:07.700Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/com/example/platform/payment-commons/2.9.0/payment-commons-2.9.0.pom
+[2026-09-15T08:41:07.933Z] [WARNING] Could not transfer metadata com.example.platform:payment-commons:2.9.0/maven-metadata.xml from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 401, reason phrase: Unauthorized (401)
+[2026-09-15T08:41:07.934Z] Progress (1): 2.1/4.5 kB
+[2026-09-15T08:41:07.934Z] Progress (1): 4.5 kB
+[2026-09-15T08:41:08.010Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/com/example/platform/payment-commons/2.9.0/payment-commons-2.9.0.jar
+[2026-09-15T08:41:08.201Z] [INFO] ------------------------------------------------------------------------
+[2026-09-15T08:41:08.201Z] [INFO] BUILD FAILURE
+[2026-09-15T08:41:08.201Z] [INFO] ------------------------------------------------------------------------
+[2026-09-15T08:41:08.202Z] [INFO] Total time:  1.812 s
+[2026-09-15T08:41:08.202Z] [INFO] Finished at: 2026-09-15T08:41:08Z
+[2026-09-15T08:41:08.202Z] [INFO] ------------------------------------------------------------------------
+[2026-09-15T08:41:08.203Z] [ERROR] Failed to execute goal on project payment-service: Could not resolve dependencies for project com.example:payment-service:jar:1.4.2: Failed to collect dependencies at com.example.platform:payment-commons:jar:2.9.0: Failed to read artifact descriptor for com.example.platform:payment-commons:jar:2.9.0: Could not transfer artifact com.example.platform:payment-commons:pom:2.9.0 from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 401, reason phrase: Unauthorized (401) -> [Help 1]
+[2026-09-15T08:41:08.203Z] [ERROR]
+[2026-09-15T08:41:08.203Z] [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[2026-09-15T08:41:08.203Z] [ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[2026-09-15T08:41:08.203Z] [ERROR]
+[2026-09-15T08:41:08.203Z] [ERROR] For more information about the errors and possible solutions, please read the following articles:
+[2026-09-15T08:41:08.203Z] [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE
