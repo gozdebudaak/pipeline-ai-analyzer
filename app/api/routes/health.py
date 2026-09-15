@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Response, status
 
 # A router is a group of endpoints. Each file under routes/ owns one router,
 # and main.py plugs them into the application.
@@ -16,12 +16,16 @@ def health() -> dict[str, str]:
 
 
 @router.get("/ready")
-def ready() -> dict[str, object]:
+def ready(request: Request, response: Response) -> dict[str, object]:
     """Readiness: the service can accept traffic.
 
-    External dependencies (database, LLM provider) are checked here as they
-    are added. If this fails, the orchestrator stops routing traffic to this
-    instance but does not restart it.
+    External dependencies are checked here as they are added. If this fails,
+    the orchestrator stops routing traffic to this instance but does not
+    restart it.
     """
-    checks: dict[str, str] = {}  # e.g. {"database": "ok"} once PostgreSQL exists
+    llm_configured = getattr(request.app.state, "analysis_service", None) is not None
+    checks: dict[str, str] = {"llm": "ok" if llm_configured else "not_configured"}
+    if not llm_configured:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "not_ready", "checks": checks}
     return {"status": "ready", "checks": checks}

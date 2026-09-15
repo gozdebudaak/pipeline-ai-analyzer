@@ -14,7 +14,7 @@ def test_ready_returns_ready_with_checks(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ready"
-    assert isinstance(body["checks"], dict)
+    assert body["checks"] == {"llm": "ok"}  # the fake provider counts as configured
 
 
 def test_unknown_path_returns_404(client: TestClient) -> None:

@@ -7,9 +7,10 @@ relevant error sections from logs, identifies probable root causes and suggests
 remediation steps. Designed as a production-oriented platform component, not a
 thin LLM wrapper.
 
-> Status: **MVP 1 in progress** — deterministic services (secret redaction,
-> log preprocessing, failure classification) are done and tested; the LLM
-> layer and the `/api/v1/analyze` endpoint are next.
+> Status: **MVP 1 — AI log analyzer** is implemented: `POST /api/v1/analyze`
+> takes a raw CI/CD log and returns a validated, structured analysis. The
+> pipeline is secret redaction → log preprocessing → rule-based
+> classification → LLM analysis → schema validation → reconciliation.
 
 ## Roadmap
 
@@ -44,6 +45,36 @@ It will download the Python version pinned in `.python-version` on demand:
 uv python install 3.12
 ```
 
+## How an analysis works
+
+```text
+POST /api/v1/analyze {"log": "..."}
+        │
+        ▼
+ SecretRedactor        passwords, tokens, keys, URL credentials -> [REDACTED]
+        │
+        ▼
+ LogProcessor          strip ANSI/timestamps, drop noise, fold repeats,
+                       keep error regions + context + tail within a budget
+        │
+        ├──────────────► FailureClassifier   weighted rule table -> category
+        ▼
+ PromptBuilder         system rules + <log_excerpt>  (no classifier hint)
+        │
+        ▼
+ LLMProvider           OpenAI (structured output) or the fake provider in tests
+        │
+        ▼
+ AnalysisResult        strict Pydantic schema; invalid model output never leaves the API
+        │
+        ▼
+ reconcile()           model category vs rule-based category -> confidence adjusted
+```
+
+Nothing derived from the log reaches the LLM before it has passed the
+redactor, and the rule-based opinion is deliberately withheld from the model
+so the two can be compared as independent signals.
+
 ## Local development
 
 ```bash
@@ -67,6 +98,66 @@ make check        # lint + typecheck + test
 `uv run <cmd>` executes `<cmd>` inside the project's virtual environment, so
 you never need to activate `.venv` manually.
 
+## Using the API
+
+Start the server (see below), then:
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/api/v1/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"log": "[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.", "source": "jenkins", "metadata": {"job": "payment-service", "build": "142"}}'
+```
+
+Response (abridged):
+
+```json
+{
+  "request_id": "69d0db29-...",
+  "analysis": {
+    "status": "failed", "category": "authentication", "severity": "high",
+    "summary": "...", "root_cause": "...", "confidence": 0.9,
+    "evidence": ["401 Unauthorized"],
+    "suggested_actions": ["Verify the repository credentials configured in the pipeline."]
+  },
+  "rule_based": {"category": "authentication", "matched_rules": ["http_401"], "agrees_with_model": true},
+  "log_stats": {"total_lines": 57, "normalized_lines": 33, "excerpt_lines": 33, "truncated": false, "secrets_redacted": 4},
+  "llm": {"provider": "openai", "model": "gpt-5.4-mini", "input_tokens": 1512, "output_tokens": 290, "prompt_version": "1"}
+}
+```
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/v1/analyze` | Analyse a raw log (body: `log`, optional `source`, `metadata`) |
+| `GET /health` | Liveness: the process is up |
+| `GET /ready` | Readiness: `503` with `{"llm": "not_configured"}` when no provider is set |
+| `GET /docs` | Interactive OpenAPI documentation |
+
+Errors share one envelope, `{"error": {"code", "message", "request_id"}}`:
+
+| Status | `code` | Meaning |
+|--------|--------|---------|
+| 422 | — | Request body invalid (empty log, over 2 M characters, unknown field) |
+| 502 | `llm_invalid_response` | The model answered but the answer failed schema validation |
+| 503 | `llm_unavailable` | Provider unreachable, rate limited or out of credit |
+| 503 | `llm_not_configured` | `OPENAI_API_KEY` is not set |
+
+### Configuration
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `APP_ENV` | `development` | `development`, `test` or `production`. In `test` the fake provider is always used. |
+| `LOG_LEVEL` | `INFO` | Root log level |
+| `OPENAI_API_KEY` | — | Required for real analyses; never logged (`SecretStr`) |
+| `OPENAI_MODEL` | `gpt-5.4-mini` | Any chat-completions model with structured output support |
+| `LLM_TIMEOUT_SECONDS` | `60` | Per-request timeout |
+| `LLM_MAX_RETRIES` | `2` | SDK retries for transient failures only |
+
+Run without touching OpenAI (the fake provider returns a canned analysis):
+
+```bash
+APP_ENV=test make run
+```
+
 ## Running with Docker
 
 ```bash
@@ -75,6 +166,10 @@ docker compose ps                # STATUS should show "(healthy)"
 curl -i http://127.0.0.1:8000/health
 docker compose down
 ```
+
+Compose reads `OPENAI_API_KEY` and `OPENAI_MODEL` from `.env`. Without a
+key the container is still healthy (liveness) but `/ready` returns 503 and
+`/analyze` answers `llm_not_configured`.
 
 The image is a two-stage build: dependencies are installed with `uv` in a
 builder stage, and only the resulting virtual environment and source are
@@ -98,13 +193,24 @@ with `UV_FROZEN=1`, so CI installs exactly what `uv.lock` pins.
 
 ```text
 app/
+  api/routes/analyze.py        POST /api/v1/analyze (thin: validate, call the service, map)
+  api/routes/health.py         /health and /ready
+  api/errors.py                domain exceptions -> standard error envelope
+  api/dependencies.py          how routes obtain the analysis service
   api/middleware.py            correlation ID + request logging
-  api/routes/                  HTTP endpoints
   core/config.py               settings from environment variables (pydantic-settings)
   core/logging.py              JSON log formatter with correlation ID
+  schemas/analysis.py          AnalysisResult: the strict result schema
+  schemas/analyze.py           request/response bodies of the analyze endpoint
   services/secret_redactor.py  removes passwords, tokens, keys before anything reaches an LLM
   services/log_processor.py    normalises logs and extracts error regions within a budget
   services/failure_classifier.py  weighted rule table mapping error lines to a category
+  services/prompt_builder.py   system + user messages sent to the model
+  services/analysis_service.py orchestration and rule-vs-model reconciliation
+  llm/base.py                  LLMProvider contract, error types, output validation gate
+  llm/openai_provider.py       OpenAI implementation (structured output, error mapping)
+  llm/fake.py                  no-network provider for tests and local runs
+  llm/factory.py               picks the provider from settings; test env always gets the fake
   main.py                      FastAPI application factory
 sample_logs/                   realistic failure logs (Docker, Kubernetes, Maven, Artifactory)
                                with embedded fake secrets; used by the chain tests

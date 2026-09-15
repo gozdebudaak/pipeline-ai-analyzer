@@ -9,7 +9,7 @@ and validated once at startup. Anything that differs between environments
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 AppEnv = Literal["development", "test", "production"]
@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5.4-mini"
     llm_timeout_seconds: float = 60.0
     llm_max_retries: int = 2  # only for transient failures (network, 429, 5xx)
+
+    @field_validator("openai_api_key", mode="before")
+    @classmethod
+    def _empty_key_is_missing(cls, value: object) -> object:
+        # docker-compose renders an unset variable as "" ; treat that as "not configured".
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @property
     def is_production(self) -> bool:

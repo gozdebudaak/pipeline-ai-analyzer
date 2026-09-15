@@ -36,3 +36,21 @@ def test_invalid_environment_value_is_rejected(monkeypatch: pytest.MonkeyPatch) 
 def test_get_settings_is_cached() -> None:
     get_settings.cache_clear()
     assert get_settings() is get_settings()
+
+
+@pytest.mark.parametrize("raw", ["", "   "])
+def test_blank_openai_key_counts_as_not_configured(
+    monkeypatch: pytest.MonkeyPatch, raw: str
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", raw)
+
+    assert Settings(_env_file=None).openai_api_key is None
+
+
+def test_real_openai_key_is_kept(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-abc")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.openai_api_key is not None
+    assert settings.openai_api_key.get_secret_value() == "sk-abc"
