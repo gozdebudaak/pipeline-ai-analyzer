@@ -111,6 +111,47 @@ def test_duplicates_are_detected_even_when_timestamps_differ() -> None:
     assert result.lines == ["Retrying connection  (repeated 3 times)"]
 
 
+def test_lines_differing_only_by_digits_are_folded_as_similar() -> None:
+    raw = "\n".join(f"[INFO] compiled module {i}" for i in range(185, 200)) + "\n[INFO] done\n"
+
+    result = LogProcessor().normalize(raw)
+
+    assert result.lines == ["[INFO] compiled module 185  (15 similar lines)", "[INFO] done"]
+    assert result.similar_collapsed == 14
+    assert result.duplicates_collapsed == 0
+
+
+def test_error_lines_are_never_folded_as_similar() -> None:
+    raw = (
+        "Tests run: 12, Failures: 0, Errors: 0, Skipped: 0\n"
+        "Tests run: 12, Failures: 1, Errors: 0, Skipped: 0 <<< FAILURE!\n"
+        "Tests run: 12, Failures: 2, Errors: 0, Skipped: 0 <<< FAILURE!\n"
+    )
+
+    result = LogProcessor().normalize(raw)
+
+    assert len(result.lines) == 3  # the two failing lines have the same shape but stay apart
+    assert result.similar_collapsed == 0
+
+
+def test_identical_and_similar_runs_are_counted_separately() -> None:
+    raw = "Waiting...\nWaiting...\nstep 1\nstep 2\nstep 3\n"
+
+    result = LogProcessor().normalize(raw)
+
+    assert result.lines == ["Waiting...  (repeated 2 times)", "step 1  (3 similar lines)"]
+    assert result.duplicates_collapsed == 1
+    assert result.similar_collapsed == 2
+
+
+def test_lines_with_different_words_are_not_similar() -> None:
+    raw = "Downloaded a.pom (1 kB)\nDownloaded b.pom (2 kB)\n"
+
+    result = LogProcessor(noise_patterns=()).normalize(raw)
+
+    assert len(result.lines) == 2
+
+
 def test_non_consecutive_repeats_are_kept() -> None:
     raw = "A\nB\nA\n"
 

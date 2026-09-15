@@ -65,7 +65,8 @@ class NormalizedLog:
     lines: list[str]
     total_lines: int  # lines in the raw input
     noise_removed: int  # lines dropped as noise
-    duplicates_collapsed: int  # lines folded into a "(repeated N times)" marker
+    duplicates_collapsed: int  # identical lines folded into a "(repeated N times)" marker
+    similar_collapsed: int = 0  # lines differing only by digits folded into "(N similar lines)"
 
     @property
     def kept_lines(self) -> int:
@@ -111,24 +112,37 @@ class LogProcessor:
                 continue
             cleaned.append(line)
 
-        lines, duplicates_collapsed = _collapse_consecutive_duplicates(cleaned)
+        lines, duplicates_collapsed, similar_collapsed = _collapse_consecutive_duplicates(cleaned)
 
         return NormalizedLog(
             lines=lines,
             total_lines=len(raw_lines),
             noise_removed=noise_removed,
             duplicates_collapsed=duplicates_collapsed,
+            similar_collapsed=similar_collapsed,
         )
 
 
-def _collapse_consecutive_duplicates(lines: list[str]) -> tuple[list[str], int]:
-    """Fold runs of identical lines into one line with a repeat marker.
+_DIGITS = re.compile(r"\d+")
 
-    Retry loops print the same message hundreds of times; the fact that it
-    repeated is useful, the copies are not.
+
+def _shape(line: str) -> str:
+    """The line with every number replaced, so "module 185" and "module 186" compare equal."""
+    return _DIGITS.sub("N", line)
+
+
+def _collapse_consecutive_duplicates(lines: list[str]) -> tuple[list[str], int, int]:
+    """Fold runs of identical lines, then runs of lines that differ only by digits.
+
+    Retry loops print the same message hundreds of times; progress output
+    prints the same message with a changing counter. The fact that it
+    repeated is useful, the copies are not. Error lines are never folded as
+    "similar": ``Failures: 0`` and ``Failures: 1`` have the same shape but
+    opposite meaning, so only exact repeats apply to them.
     """
     result: list[str] = []
-    collapsed = 0
+    identical = 0
+    similar = 0
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -137,13 +151,33 @@ def _collapse_consecutive_duplicates(lines: list[str]) -> tuple[list[str], int]:
             run += 1
         if run > 1:
             result.append(f"{line}  (repeated {run} times)")
-            collapsed += run - 1
+            identical += run - 1
+            i += run
+            continue
+
+        shape = _shape(line)
+        if not is_error_line(line):
+            while (
+                i + run < len(lines)
+                and lines[i + run] != line
+                and not is_error_line(lines[i + run])
+                and _shape(lines[i + run]) == shape
+            ):
+                run += 1
+        if run > 1:
+            result.append(f"{line}  ({run} similar lines)")
+            similar += run - 1
         else:
             result.append(line)
         i += run
-    return result, collapsed
+    return result, identical, similar
 
 
+# ---------------------------------------------------------------------------
+# Stage 2: error extraction
+# ---------------------------------------------------------------------------
+
+# Lines that indicate a failure. A line is an error line if any pattern matches.
 ERROR_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(?:ERROR|FATAL|SEVERE|CRITICAL|PANIC)\b"),
     re.compile(r"\b(?:BUILD FAILED|BUILD FAILURE|FAILURE|FAILED)\b"),
