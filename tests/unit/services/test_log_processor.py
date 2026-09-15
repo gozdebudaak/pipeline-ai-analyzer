@@ -171,6 +171,9 @@ from app.services.log_processor import (  # noqa: E402
         "Could not resolve dependencies for project com.example:payment-service",
         "dial tcp 10.0.0.5:5432: connect: connection refused",
         "Tests run: 12, Failures: 1, Errors: 0, Skipped: 0 <<< FAILURE!",
+        'error: deployment "api" exceeded its progress deadline',  # kubectl, lowercase
+        "fatal: not a git repository (or any of the parent directories): .git",
+        "error: failed to solve: process did not complete successfully",  # docker buildx
     ],
 )
 def test_error_lines_are_detected(line: str) -> None:

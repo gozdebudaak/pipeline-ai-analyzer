@@ -149,6 +149,7 @@ ERROR_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(?:BUILD FAILED|BUILD FAILURE|FAILURE|FAILED)\b"),
     re.compile(r"\b\w*(?:Exception|Error)\b(?::|\s+at\b|$)"),  # NullPointerException: / ValueError:
     re.compile(r"^Traceback \(most recent call last\)"),
+    re.compile(r"^\s*(?:error|fatal|panic):", re.IGNORECASE),  # kubectl/git/docker "error: ..."
     re.compile(r"\bexit (?:code|status)[: =]+[1-9]\d*\b"),
     re.compile(
         r"\b(?:ImagePullBackOff|ErrImagePull|CrashLoopBackOff|OOMKilled|"
