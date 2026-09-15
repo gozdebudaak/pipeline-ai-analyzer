@@ -1,5 +1,7 @@
 # pipeline-ai-analyzer
 
+[![CI](https://github.com/gozdebudaak/pipeline-ai-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/gozdebudaak/pipeline-ai-analyzer/actions/workflows/ci.yml)
+
 AI-powered DevOps assistant that analyzes CI/CD pipeline failures, extracts the
 relevant error sections from logs, identifies probable root causes and suggests
 remediation steps. Designed as a production-oriented platform component, not a
@@ -49,13 +51,15 @@ uv sync                  # creates .venv and installs locked dependencies
 cp .env.example .env
 ```
 
-Common commands:
+Common commands (see the `Makefile`; each target runs exactly what CI runs):
 
 ```bash
-uv run uvicorn app.main:app --reload     # start the API on http://127.0.0.1:8000
-uv run pytest                            # run tests
-uv run ruff check . && uv run ruff format --check .
-uv run mypy app
+make run          # start the API on http://127.0.0.1:8000 with auto-reload
+make test         # pytest
+make lint         # ruff check + format check
+make format       # auto-fix lint issues and reformat
+make typecheck    # mypy
+make check        # lint + typecheck + test
 ```
 
 `uv run <cmd>` executes `<cmd>` inside the project's virtual environment, so
@@ -81,16 +85,27 @@ as healthy once it passes.
 > symlinks, or add `/Applications/Docker.app/Contents/Resources/bin` to your
 > `PATH` in `~/.zshrc`.
 
+## Continuous integration
+
+Every push and pull request to `main` runs the workflow in
+`.github/workflows/ci.yml`: `lint`, `typecheck` and `test` run in parallel;
+`docker-build` runs only when all three pass. The workflow uses `uv sync`
+with `UV_FROZEN=1`, so CI installs exactly what `uv.lock` pins.
+
 ## Project layout
 
 ```text
 app/
-  api/routes/     HTTP endpoints (versioned)
-  core/           configuration, logging, security helpers
-  main.py         FastAPI application factory
+  api/middleware.py   correlation ID + request logging
+  api/routes/         HTTP endpoints
+  core/config.py      settings from environment variables (pydantic-settings)
+  core/logging.py     JSON log formatter with correlation ID
+  main.py             FastAPI application factory
 tests/
-  unit/           fast, isolated tests
-  integration/    tests that exercise the HTTP layer
+  conftest.py         shared fixtures (TestClient)
+  unit/               fast, isolated tests
+  integration/        tests that exercise the HTTP layer
+.github/workflows/    CI pipeline
 ```
 
 Further directories (`services/`, `llm/`, `integrations/`, `migrations/`,
