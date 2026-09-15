@@ -360,10 +360,18 @@ def _merge(segments: list[_Segment]) -> list[_Segment]:
 def _fit_budget(
     segments: list[_Segment], lines: list[str], config: ExtractionConfig
 ) -> tuple[list[_Segment], bool]:
-    """Keep whole segments in priority order while they fit the line/char budget."""
+    """Keep whole segments in priority order while they fit the line/char budget.
+
+    Two passes. First, whole segments by priority (tail, first error, later
+    errors, warnings). Second, every error segment that did not fit comes
+    back as its bare error line: a later error must never vanish entirely,
+    because it may be the real cause (a harmless test failure followed by an
+    OutOfMemoryError 500 lines later).
+    """
     remaining_lines = config.max_lines
     remaining_chars = config.max_chars
     chosen: list[_Segment] = []
+    deferred: list[_Segment] = []  # error segments that did not fit whole
     truncated = False
 
     for seg in sorted(segments, key=lambda s: (s.priority, s.start)):
@@ -378,11 +386,23 @@ def _fit_budget(
 
         truncated = True
         if seg.priority <= _PRIORITY_FIRST_ERROR:
+            # The tail and the first error are too important to drop: shrink them
+            # around their anchor instead.
             shrunk = _shrink_around_anchor(seg, lines, remaining_lines, remaining_chars)
             if shrunk is not None:
                 chosen.append(shrunk)
                 remaining_lines -= shrunk.size
                 remaining_chars -= sum(len(lines[j]) + 1 for j in range(shrunk.start, shrunk.end))
+        elif seg.priority == _PRIORITY_ERROR:
+            deferred.append(seg)
+
+    # Second pass: one bare line per dropped error, in log order.
+    for seg in sorted(deferred, key=lambda s: s.start):
+        line_chars = len(lines[seg.anchor]) + 1
+        if remaining_lines >= 1 and line_chars <= remaining_chars:
+            chosen.append(_Segment(seg.anchor, seg.anchor + 1, seg.anchor, seg.priority))
+            remaining_lines -= 1
+            remaining_chars -= line_chars
 
     return sorted(chosen, key=lambda s: s.start), truncated
 

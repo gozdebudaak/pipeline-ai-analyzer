@@ -411,20 +411,38 @@ def test_overlapping_windows_are_merged_without_duplicate_lines() -> None:
     ]
 
 
-def test_budget_keeps_tail_and_first_error_and_drops_later_errors() -> None:
+def test_budget_keeps_tail_and_first_error_and_bare_lines_of_later_errors() -> None:
     lines = _numbered(200)
-    lines[20] = "[ERROR] first (root cause)"
+    lines[20] = "[ERROR] first (root cause?)"
     lines[100] = "[ERROR] second"
-    lines[150] = "[ERROR] third"
+    lines[150] = "[ERROR] OutOfMemoryError: Java heap space"
     config = ExtractionConfig(context_before=2, context_after=2, tail_lines=5, max_lines=12)
 
     excerpt, truncated = extract(lines, config)
 
+    body = excerpt.splitlines()
     assert truncated
-    assert "[ERROR] first (root cause)" in excerpt
-    assert "line 199" in excerpt
-    assert "[ERROR] second" not in excerpt
-    assert "[ERROR] third" not in excerpt
+    assert "[ERROR] first (root cause?)" in body
+    assert "line 199" in body  # tail
+    # later errors survive as bare lines: present, but without their context
+    assert "[ERROR] second" in body
+    assert "[ERROR] OutOfMemoryError: Java heap space" in body
+    assert "line 99" not in body
+    assert "line 149" not in body
+    assert len([line for line in body if not line.startswith("...")]) <= 12
+
+
+def test_later_errors_are_dropped_only_when_not_even_one_line_fits() -> None:
+    lines = _numbered(200)
+    lines[20] = "[ERROR] first"
+    lines[100] = "[ERROR] second"
+    config = ExtractionConfig(context_before=2, context_after=2, tail_lines=5, max_lines=10)
+
+    excerpt, truncated = extract(lines, config)
+
+    assert truncated
+    assert "[ERROR] first" in excerpt
+    assert "[ERROR] second" not in excerpt  # 5 tail + 5 first-error window = 10, nothing left
 
 
 def test_first_error_segment_is_shrunk_when_it_alone_exceeds_budget() -> None:
