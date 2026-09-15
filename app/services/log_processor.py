@@ -143,6 +143,7 @@ def _collapse_consecutive_duplicates(lines: list[str]) -> tuple[list[str], int]:
         i += run
     return result, collapsed
 
+
 ERROR_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(?:ERROR|FATAL|SEVERE|CRITICAL|PANIC)\b"),
     re.compile(r"\b(?:BUILD FAILED|BUILD FAILURE|FAILURE|FAILED)\b"),
