@@ -11,7 +11,7 @@ the engineer. Telling the model the answer would make agreement meaningless.
 
 from dataclasses import dataclass
 
-from app.services.log_processor import SKIP_MARKER
+from app.services.log_processor import GAP_MARKER, SKIP_MARKER
 from app.services.secret_redactor import REDACTED
 
 PROMPT_VERSION = "1"
@@ -31,6 +31,8 @@ Rules:
    ordinary value that was present.
 4. Lines shown as "{SKIP_MARKER.format(n="N")}" were omitted for brevity. Do not
    assume the lines around a skip marker are consecutive.
+   A line "{GAP_MARKER.format(seconds="N")}" means N seconds passed between the
+   surrounding lines with no output: a likely hang, wait or timeout.
 5. Prefer the earliest error that explains the later ones: later errors are
    often consequences of the first one.
 6. Suggested actions must be concrete checks or changes an engineer can

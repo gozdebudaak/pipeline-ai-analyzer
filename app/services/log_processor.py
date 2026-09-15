@@ -12,6 +12,7 @@ context, within a size budget. ``process`` runs both.
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # Normalisation helpers
@@ -23,8 +24,13 @@ _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 # Leading timestamps in the common CI formats:
 #   2026-09-15T09:06:10.532Z    [2026-09-15T09:06:10.532Z]    2026-09-15 09:06:10,532
 _LEADING_TIMESTAMP = re.compile(
-    r"^\[?\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?\]?\s*"
+    r"^\[?(?P<stamp>"
+    r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?"
+    r")\]?\s*"
 )
+
+GAP_MARKER = "[gap: {seconds}s]"  # inserted where consecutive lines are far apart in time
+_GAP_MARKER_RE = re.compile(r"^\[gap: \d+s\]$")
 
 # Lines that never explain a failure. Each entry documents where it comes from.
 NOISE_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -51,6 +57,24 @@ def strip_timestamp(line: str) -> str:
     return _LEADING_TIMESTAMP.sub("", line, count=1)
 
 
+def parse_timestamp(line: str) -> datetime | None:
+    """The leading timestamp as a datetime, or None when the line has none."""
+    match = _LEADING_TIMESTAMP.match(line)
+    if not match:
+        return None
+    stamp = match.group("stamp").replace(",", ".").replace(" ", "T")
+    try:
+        parsed = datetime.fromisoformat(stamp)
+    except ValueError:
+        return None
+    # Naive stamps are compared among themselves; drop tzinfo so all are comparable.
+    return parsed.replace(tzinfo=None)
+
+
+def is_gap_marker(line: str) -> bool:
+    return bool(_GAP_MARKER_RE.match(line))
+
+
 def is_noise(line: str) -> bool:
     return any(pattern.search(line) for pattern in NOISE_PATTERNS)
 
@@ -67,6 +91,7 @@ class NormalizedLog:
     noise_removed: int  # lines dropped as noise
     duplicates_collapsed: int  # identical lines folded into a "(repeated N times)" marker
     similar_collapsed: int = 0  # lines differing only by digits folded into "(N similar lines)"
+    gaps_marked: int = 0  # "[gap: Ns]" markers inserted for large time gaps
 
     @property
     def kept_lines(self) -> int:
@@ -78,9 +103,11 @@ class LogProcessor:
         self,
         noise_patterns: tuple[re.Pattern[str], ...] = NOISE_PATTERNS,
         extraction: "ExtractionConfig | None" = None,
+        gap_threshold_seconds: float = 60.0,
     ) -> None:
         self._noise_patterns = noise_patterns
         self._extraction = extraction or ExtractionConfig()
+        self._gap_threshold = gap_threshold_seconds
 
     def process(self, raw: str) -> "ProcessedLog":
         normalized = self.normalize(raw)
@@ -105,8 +132,23 @@ class LogProcessor:
 
         cleaned: list[str] = []
         noise_removed = 0
+        gaps_marked = 0
+        previous_stamp: datetime | None = None
         for raw_line in raw_lines:
-            line = strip_timestamp(strip_ansi(raw_line)).rstrip()
+            without_ansi = strip_ansi(raw_line)
+
+            # Timestamps are dropped, but a large jump between two of them is
+            # information (a hang, a timeout): keep it as a marker line.
+            stamp = parse_timestamp(without_ansi)
+            if stamp is not None:
+                if previous_stamp is not None:
+                    gap = (stamp - previous_stamp).total_seconds()
+                    if gap >= self._gap_threshold:
+                        cleaned.append(GAP_MARKER.format(seconds=int(gap)))
+                        gaps_marked += 1
+                previous_stamp = stamp
+
+            line = strip_timestamp(without_ansi).rstrip()
             if any(p.search(line) for p in self._noise_patterns):
                 noise_removed += 1
                 continue
@@ -120,6 +162,7 @@ class LogProcessor:
             noise_removed=noise_removed,
             duplicates_collapsed=duplicates_collapsed,
             similar_collapsed=similar_collapsed,
+            gaps_marked=gaps_marked,
         )
 
 
@@ -156,7 +199,7 @@ def _collapse_consecutive_duplicates(lines: list[str]) -> tuple[list[str], int, 
             continue
 
         shape = _shape(line)
-        if not is_error_line(line):
+        if not is_error_line(line) and not is_gap_marker(line):
             while (
                 i + run < len(lines)
                 and lines[i + run] != line

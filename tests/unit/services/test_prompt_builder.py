@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.log_processor import SKIP_MARKER
+from app.services.log_processor import GAP_MARKER, SKIP_MARKER
 from app.services.prompt_builder import PROMPT_VERSION, PromptBuilder
 from app.services.secret_redactor import REDACTED
 
@@ -24,6 +24,7 @@ def test_system_prompt_explains_redaction_and_skip_markers() -> None:
 
     assert REDACTED in prompt.system
     assert SKIP_MARKER.format(n="N") in prompt.system
+    assert GAP_MARKER.format(seconds="N") in prompt.system
 
 
 def test_system_prompt_demands_json_only() -> None:

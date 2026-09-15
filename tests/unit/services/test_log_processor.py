@@ -1,8 +1,11 @@
 import pytest
 
 from app.services.log_processor import (
+    GAP_MARKER,
     LogProcessor,
+    is_gap_marker,
     is_noise,
+    parse_timestamp,
     strip_ansi,
     strip_timestamp,
 )
@@ -150,6 +153,89 @@ def test_lines_with_different_words_are_not_similar() -> None:
     result = LogProcessor(noise_patterns=()).normalize(raw)
 
     assert len(result.lines) == 2
+
+
+# ---------------------------------------------------------------------------
+# time gaps
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("line", "expected_iso"),
+    [
+        ("2026-09-15T09:06:10.532Z x", "2026-09-15T09:06:10.532000"),
+        ("[2026-09-15T09:06:10Z] x", "2026-09-15T09:06:10"),
+        ("2026-09-15 09:06:10,532 x", "2026-09-15T09:06:10.532000"),
+        ("2026-09-15T09:06:10+03:00 x", "2026-09-15T09:06:10"),
+    ],
+)
+def test_parse_timestamp_formats(line: str, expected_iso: str) -> None:
+    parsed = parse_timestamp(line)
+
+    assert parsed is not None
+    assert parsed.isoformat() == expected_iso
+
+
+def test_parse_timestamp_absent() -> None:
+    assert parse_timestamp("[INFO] no stamp") is None
+
+
+def test_large_time_gap_becomes_a_marker_line() -> None:
+    raw = (
+        "[2026-09-15T09:00:00Z] + terraform apply\n"
+        "[2026-09-15T09:10:00Z] Error: timeout while waiting for state to become 'available'\n"
+    )
+
+    result = LogProcessor().normalize(raw)
+
+    assert result.lines == [
+        "+ terraform apply",
+        GAP_MARKER.format(seconds=600),
+        "Error: timeout while waiting for state to become 'available'",
+    ]
+    assert result.gaps_marked == 1
+
+
+def test_small_gaps_are_ignored() -> None:
+    raw = "[2026-09-15T09:00:00Z] a\n[2026-09-15T09:00:30Z] b\n"
+
+    result = LogProcessor().normalize(raw)
+
+    assert result.lines == ["a", "b"]
+    assert result.gaps_marked == 0
+
+
+def test_gap_threshold_is_configurable() -> None:
+    raw = "[2026-09-15T09:00:00Z] a\n[2026-09-15T09:00:30Z] b\n"
+
+    result = LogProcessor(gap_threshold_seconds=10).normalize(raw)
+
+    assert GAP_MARKER.format(seconds=30) in result.lines
+
+
+def test_gap_is_kept_even_when_the_next_line_is_noise() -> None:
+    raw = (
+        "[2026-09-15T09:00:00Z] a\n"
+        "[2026-09-15T09:10:00Z] [Pipeline] { (Deploy)\n"
+        "[2026-09-15T09:10:01Z] b\n"
+    )
+
+    result = LogProcessor().normalize(raw)
+
+    assert result.lines == ["a", GAP_MARKER.format(seconds=600), "b"]
+
+
+def test_gap_marker_is_neither_noise_nor_error_nor_folded() -> None:
+    marker = GAP_MARKER.format(seconds=600)
+
+    assert is_gap_marker(marker)
+    assert not is_noise(marker)
+    lines = [marker, GAP_MARKER.format(seconds=900)]
+    from app.services.log_processor import _collapse_consecutive_duplicates
+
+    folded, _, similar = _collapse_consecutive_duplicates(lines)
+    assert folded == lines
+    assert similar == 0
 
 
 def test_non_consecutive_repeats_are_kept() -> None:
