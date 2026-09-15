@@ -84,6 +84,41 @@ def test_url_without_credentials_is_untouched(redactor: SecretRedactor) -> None:
     assert redactor.redact(line).text == line
 
 
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        (
+            "curl -sS -u ci-payment:AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR -T app.jar https://x/",
+            "curl -sS -u [REDACTED]:[REDACTED] -T app.jar https://x/",
+        ),
+        (
+            "wget --user=deploy:s3cret https://x/file",
+            "wget --user=[REDACTED]:[REDACTED] https://x/file",
+        ),
+    ],
+)
+def test_user_flag_credentials(redactor: SecretRedactor, line: str, expected: str) -> None:
+    result = redactor.redact(line)
+
+    assert result.text == expected
+    assert result.counts == {"user_flag_credentials": 1}
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "-H 'X-JFrog-Art-Api: AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR'",
+        "X-Api-Key: 9f8e7d6c5b4a",
+        'curl -H "PRIVATE-TOKEN: glpat-abc" https://gitlab/',
+    ],
+)
+def test_api_key_headers(redactor: SecretRedactor, line: str) -> None:
+    result = redactor.redact(line)
+
+    assert "[REDACTED]" in result.text
+    assert "api_key_header" in result.counts
+
+
 def test_basic_authorization_header(redactor: SecretRedactor) -> None:
     result = redactor.redact("authorization: Basic dXNlcjpwYXNzd29yZA==")
 

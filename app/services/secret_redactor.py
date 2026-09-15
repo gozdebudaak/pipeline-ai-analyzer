@@ -71,6 +71,22 @@ DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
         ),
         replacement=rf"\g<prefix>{REDACTED}",
     ),
+    # curl / wget / git style user flag:  -u user:pass   --user=user:pass
+    SecretPattern(
+        name="user_flag_credentials",
+        regex=re.compile(r"(?P<flag>(?:^|\s)(?:-u|--user)[\s=]+)[^\s:@]+:\S+"),
+        replacement=rf"\g<flag>{REDACTED}:{REDACTED}",
+    ),
+    # API-key style HTTP headers: X-JFrog-Art-Api: ..., X-Api-Key: ..., PRIVATE-TOKEN: ...
+    SecretPattern(
+        name="api_key_header",
+        regex=re.compile(
+            r"(?P<prefix>\b(?:X-JFrog-Art-Api|X-Api-Key|X-Auth-Token|X-Access-Token|"
+            r"X-Vault-Token|Private-Token|Api-Key)\s*:\s*)\S+",
+            re.IGNORECASE,
+        ),
+        replacement=rf"\g<prefix>{REDACTED}",
+    ),
     # Docker config.json style: "auth": "dXNlcjpwYXNz"
     SecretPattern(
         name="docker_auth_json",
