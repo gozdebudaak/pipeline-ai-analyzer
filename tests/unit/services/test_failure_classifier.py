@@ -87,7 +87,19 @@ def classifier() -> FailureClassifier:
             FailureCategory.AUTHORIZATION,
             "http_403",
         ),
+        ("bash: ./deploy.sh: Permission denied", FailureCategory.AUTHORIZATION, "access_denied"),
         ("dial tcp 10.0.0.5:5432: connect: connection refused", FailureCategory.NETWORK, "network"),
+        (
+            "[ERROR] Received fatal alert: handshake_failure",
+            FailureCategory.NETWORK,
+            "tls_handshake",
+        ),
+        (
+            "PKIX path building failed: unable to find valid certification path to requested target",
+            FailureCategory.NETWORK,
+            "tls_handshake",
+        ),
+        ("x509: certificate signed by unknown authority", FailureCategory.NETWORK, "tls_handshake"),
         (
             "bash: kubectl: command not found",
             FailureCategory.CONFIGURATION,
@@ -122,17 +134,63 @@ def test_empty_input_is_unknown(classifier: FailureClassifier) -> None:
     assert classifier.classify([]).category is FailureCategory.UNKNOWN
 
 
-def test_category_with_most_matching_lines_wins(classifier: FailureClassifier) -> None:
+def test_definite_signal_beats_symptom_even_when_symptom_repeats(
+    classifier: FailureClassifier,
+) -> None:
+    """The cause/effect case from the spec: 401 is the cause, unresolved deps the symptom."""
+    lines = [
+        "[ERROR] Could not resolve dependencies for project com.example:payment-service",
+        "[ERROR] Could not transfer artifact com.example:lib:jar:1.0 from/to artifactory",
+        "[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.",
+    ]
+
+    result = classifier.classify(lines)
+
+    assert result.category is FailureCategory.AUTHENTICATION
+    assert result.matched_rules == ["maven_dependency", "artifactory", "http_401"]
+    assert result.scores == {
+        FailureCategory.DEPENDENCY_RESOLUTION: 5,
+        FailureCategory.ARTIFACT_REPOSITORY: 2,
+        FailureCategory.AUTHENTICATION: 10,
+    }
+
+
+def test_a_rule_counts_once_however_many_lines_it_matches(classifier: FailureClassifier) -> None:
+    symptom = "[ERROR] Could not resolve dependencies for project x"
+    lines = [symptom] * 50 + ["[ERROR] Return code is: 401, ReasonPhrase: Unauthorized."]
+
+    result = classifier.classify(lines)
+
+    assert result.category is FailureCategory.AUTHENTICATION
+    assert result.scores[FailureCategory.DEPENDENCY_RESOLUTION] == 5
+
+
+def test_two_definite_signals_of_one_category_add_up(classifier: FailureClassifier) -> None:
     lines = [
         "Warning  Failed  pod/api-7d9f  Error: ImagePullBackOff",
-        "Warning  Failed  pod/api-7d9f  Error: ImagePullBackOff",
-        "dial tcp 10.0.0.5:5432: connect: connection refused",
+        "Back-off restarting failed container: CrashLoopBackOff",
+        "[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.",
     ]
 
     result = classifier.classify(lines)
 
     assert result.category is FailureCategory.KUBERNETES_DEPLOYMENT
-    assert result.matched_rules == ["k8s_image_pull", "network"]
+    assert result.scores[FailureCategory.KUBERNETES_DEPLOYMENT] == 18
+
+
+def test_registry_denied_beats_generic_access_denied(classifier: FailureClassifier) -> None:
+    """'pull access denied' matches both rules; the registry-specific one must win."""
+    line = "Error response from daemon: pull access denied for registry.example.com/app"
+
+    result = classifier.classify([line])
+
+    assert result.category is FailureCategory.CONTAINER_REGISTRY
+    assert set(result.matched_rules) == {"docker_registry_denied", "access_denied"}
+
+
+def test_weights_stay_within_the_documented_bands() -> None:
+    for rule in DEFAULT_RULES:
+        assert 1 <= rule.weight <= 10, rule.name
 
 
 def test_rule_names_are_unique() -> None:
