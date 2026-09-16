@@ -10,9 +10,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.services.failure_classifier import FailureCategory
-
-Severity = Literal["low", "medium", "high", "critical"]
+from app.services.failure_classifier import FailureCategory, Severity
 
 NonEmptyStr = Annotated[str, Field(min_length=1, max_length=2000)]
 

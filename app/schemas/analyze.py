@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.analysis import AnalysisResult
-from app.services.failure_classifier import FailureCategory
+from app.services.failure_classifier import FailureCategory, Severity
 
 MAX_LOG_CHARS = 2_000_000  # ~2 MB of text; larger logs must be trimmed by the caller
 
@@ -30,6 +30,12 @@ class RuleBasedOpinion(BaseModel):
     matched_rules: list[str]
     agrees_with_model: bool | None = Field(
         description="True/False when the rules had an opinion; null when they matched nothing."
+    )
+    severity: Severity | None = Field(
+        default=None, description="Severity implied by the worst matched signature, if any."
+    )
+    severity_agrees_with_model: bool | None = Field(
+        default=None, description="Whether the model's severity matches the rule-based one."
     )
 
 

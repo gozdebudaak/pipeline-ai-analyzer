@@ -40,6 +40,8 @@ async def test_full_chain_on_sample_log() -> None:
     assert outcome.category_agreement is True
     assert outcome.result.confidence == DEFAULT_FAKE_RESULT.confidence  # untouched on agreement
     assert "http_401" in outcome.matched_rules
+    assert outcome.rule_based_severity == "high"
+    assert outcome.severity_agreement is True  # the fake answers "high" too
     assert outcome.log_stats.secrets_redacted >= 1
     assert outcome.log_stats.total_lines > outcome.log_stats.excerpt_lines
     assert outcome.llm_provider == "fake"
@@ -71,12 +73,24 @@ async def test_disagreement_lowers_confidence_and_exposes_both_categories() -> N
     assert outcome.result.confidence == pytest.approx(0.63)  # 0.9 * 0.7
 
 
+async def test_severity_disagreement_is_reported_but_not_penalised() -> None:
+    model_says = DEFAULT_FAKE_RESULT.model_copy(update={"severity": "low", "confidence": 0.9})
+    outcome = await _service(FakeLLMProvider(result=model_says)).analyze(SAMPLE.read_text())
+
+    assert outcome.result.severity == "low"  # the model's judgement is kept
+    assert outcome.rule_based_severity == "high"
+    assert outcome.severity_agreement is False
+    assert outcome.result.confidence == 0.9  # no penalty for severity
+
+
 async def test_log_without_known_signature_gives_no_agreement_verdict() -> None:
     raw = "[INFO] step one\nsomething odd happened here\n[INFO] done\n"
     outcome = await _service(FakeLLMProvider()).analyze(raw)
 
     assert outcome.rule_based_category is FailureCategory.UNKNOWN
     assert outcome.category_agreement is None
+    assert outcome.rule_based_severity is None
+    assert outcome.severity_agreement is None
     assert outcome.result.confidence == DEFAULT_FAKE_RESULT.confidence
 
 

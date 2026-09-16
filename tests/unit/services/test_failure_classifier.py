@@ -188,6 +188,41 @@ def test_registry_denied_beats_generic_access_denied(classifier: FailureClassifi
     assert set(result.matched_rules) == {"docker_registry_denied", "access_denied"}
 
 
+@pytest.mark.parametrize(
+    ("line", "severity"),
+    [
+        ("Last State: Terminated  Reason: OOMKilled  Exit Code: 137", "critical"),
+        ("Back-off restarting failed container: CrashLoopBackOff", "critical"),
+        ("Warning  Failed  pod/api-7d9f  Error: ImagePullBackOff", "high"),
+        ("[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.", "high"),
+        ("[ERROR] COMPILATION ERROR :", "medium"),
+        ("[ERROR] There are test failures.", "medium"),
+    ],
+)
+def test_rule_based_severity(classifier: FailureClassifier, line: str, severity: str) -> None:
+    assert classifier.classify([line]).severity == severity
+
+
+def test_worst_matched_severity_wins(classifier: FailureClassifier) -> None:
+    lines = [
+        "[ERROR] COMPILATION ERROR :",  # medium
+        "Last State: Terminated  Reason: OOMKilled",  # critical
+    ]
+
+    assert classifier.classify(lines).severity == "critical"
+
+
+def test_location_hint_alone_gives_no_severity(classifier: FailureClassifier) -> None:
+    result = classifier.classify(["from/to artifactory"])
+
+    assert result.category is FailureCategory.ARTIFACT_REPOSITORY
+    assert result.severity is None
+
+
+def test_unknown_has_no_severity(classifier: FailureClassifier) -> None:
+    assert classifier.classify(["nothing here"]).severity is None
+
+
 def test_weights_stay_within_the_documented_bands() -> None:
     for rule in DEFAULT_RULES:
         assert 1 <= rule.weight <= 10, rule.name

@@ -13,7 +13,12 @@ from dataclasses import dataclass
 
 from app.llm.base import LLMProvider
 from app.schemas.analysis import AnalysisResult
-from app.services.failure_classifier import Classification, FailureCategory, FailureClassifier
+from app.services.failure_classifier import (
+    Classification,
+    FailureCategory,
+    FailureClassifier,
+    Severity,
+)
 from app.services.log_processor import LogProcessor
 from app.services.prompt_builder import PromptBuilder
 from app.services.secret_redactor import SecretRedactor
@@ -42,6 +47,8 @@ class AnalysisOutcome:
     rule_based_category: FailureCategory
     matched_rules: list[str]
     category_agreement: bool | None  # None when the rules had no opinion
+    rule_based_severity: Severity | None  # worst matched signature; None when rules say nothing
+    severity_agreement: bool | None  # shown, never used to penalise: severity is a judgement
     log_stats: LogStats
     llm_provider: str
     llm_model: str
@@ -95,6 +102,9 @@ class AnalysisService:
 
         response = await self._provider.analyze(prompt)
         result, agreement = reconcile(response.result, classification)
+        severity_agreement = (
+            None if classification.severity is None else classification.severity == result.severity
+        )
 
         stats = LogStats(
             total_lines=processed.total_lines,
@@ -112,6 +122,8 @@ class AnalysisService:
                 "category_agreement": agreement,
                 "confidence": result.confidence,
                 "severity": result.severity,
+                "rule_based_severity": classification.severity,
+                "severity_agreement": severity_agreement,
                 "secrets_redacted": stats.secrets_redacted,
                 "lines": f"{stats.total_lines}->{stats.normalized_lines}->{stats.excerpt_lines}",
                 "llm_provider": self._provider.name,
@@ -125,6 +137,8 @@ class AnalysisService:
             rule_based_category=classification.category,
             matched_rules=classification.matched_rules,
             category_agreement=agreement,
+            rule_based_severity=classification.severity,
+            severity_agreement=severity_agreement,
             log_stats=stats,
             llm_provider=self._provider.name,
             llm_model=response.model,

@@ -40,6 +40,8 @@ async def analyze(
             category=outcome.rule_based_category,
             matched_rules=outcome.matched_rules,
             agrees_with_model=outcome.category_agreement,
+            severity=outcome.rule_based_severity,
+            severity_agrees_with_model=outcome.severity_agreement,
         ),
         log_stats=LogStatsOut(
             total_lines=stats.total_lines,
