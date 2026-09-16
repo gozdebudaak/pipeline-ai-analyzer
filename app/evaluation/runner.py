@@ -19,6 +19,7 @@ class CaseResult:
     case_id: str
     expected_category: FailureCategory
     got_category: FailureCategory
+    known_gap: bool  # the label predicted this miss; still a miss in the score
     expected_severity: Severity
     got_severity: Severity | None
     matched_rules: list[str]
@@ -71,6 +72,7 @@ def run_case(case: EvalCase) -> CaseResult:
         case_id=case.id,
         expected_category=case.expected_category,
         got_category=classification.category,
+        known_gap=classification.category is case.rule_based_expected,
         expected_severity=case.expected_severity,
         got_severity=classification.severity,
         matched_rules=classification.matched_rules,
@@ -86,13 +88,13 @@ def run_offline(cases: list[EvalCase]) -> EvalReport:
 
 def format_report(report: EvalReport) -> str:
     """One line per case, then the totals. Plain text so it reads in CI logs."""
-    lines = [f"{'case':<24} {'category':<9} {'severity':<9} {'phrase':<7} {'tokens':>6}  rules"]
+    lines = [f"{'case':<24} {'category':<30} {'severity':<9} {'phrase':<7} {'tokens':>6}  rules"]
     for r in report.results:
-        cat = "ok" if r.category_ok else f"{r.got_category}"
+        cat = "ok" if r.category_ok else f"{r.got_category}" + (" (known)" if r.known_gap else "")
         sev = "ok" if r.severity_ok else f"{r.got_severity}"
         phrase = "ok" if r.key_phrase_found else "MISSING"
         lines.append(
-            f"{r.case_id:<24} {cat:<9} {sev:<9} {phrase:<7} {r.excerpt_tokens:>6}  "
+            f"{r.case_id:<24} {cat:<30} {sev:<9} {phrase:<7} {r.excerpt_tokens:>6}  "
             f"{', '.join(r.matched_rules) or '-'}"
         )
     lines.append("")

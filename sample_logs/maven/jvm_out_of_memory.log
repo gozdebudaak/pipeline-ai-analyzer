@@ -1,0 +1,57 @@
+Started by user jenkins-bot
+Running as SYSTEM
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on build-agent-07 in /var/lib/jenkins/workspace/ledger-service
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[2026-09-16T09:12:01.004Z] Checking out Revision 4c7e19d2 (refs/remotes/origin/main)
+[Pipeline] }
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] sh
+[2026-09-16T09:12:02.310Z] + export SONAR_TOKEN=sqp_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+[2026-09-16T09:12:02.311Z] + mvn -B -Dmaven.repo.local=/var/lib/jenkins/.m2 verify
+[2026-09-16T09:12:03.502Z] [INFO] Scanning for projects...
+[2026-09-16T09:12:04.120Z] [INFO] ------------------< com.example:ledger-service >-------------------
+[2026-09-16T09:12:04.120Z] [INFO] Building ledger-service 2.1.0
+[2026-09-16T09:12:04.121Z] [INFO] --------------------------------[ jar ]---------------------------------
+[2026-09-16T09:12:09.877Z] [INFO] --- maven-surefire-plugin:3.2.5:test (default-test) @ ledger-service ---
+[2026-09-16T09:12:10.001Z] [INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[2026-09-16T09:12:10.240Z] [INFO] Running com.example.ledger.PostingServiceTest
+[2026-09-16T09:12:14.902Z] [INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.61 s -- in com.example.ledger.PostingServiceTest
+[2026-09-16T09:12:14.950Z] [INFO] Running com.example.ledger.StatementExportTest
+[2026-09-16T09:12:41.118Z] [ERROR] Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 26.17 s <<< FAILURE! -- in com.example.ledger.StatementExportTest
+[2026-09-16T09:12:41.119Z] [ERROR] com.example.ledger.StatementExportTest.exportsFullYear -- Time elapsed: 24.93 s <<< ERROR!
+[2026-09-16T09:12:41.119Z] java.lang.OutOfMemoryError: Java heap space
+[2026-09-16T09:12:41.119Z] 	at java.base/java.util.Arrays.copyOf(Arrays.java:3537)
+[2026-09-16T09:12:41.119Z] 	at java.base/java.io.ByteArrayOutputStream.grow(ByteArrayOutputStream.java:100)
+[2026-09-16T09:12:41.119Z] 	at com.example.ledger.export.CsvWriter.write(CsvWriter.java:88)
+[2026-09-16T09:12:41.119Z] 	at com.example.ledger.StatementExportTest.exportsFullYear(StatementExportTest.java:41)
+[2026-09-16T09:12:41.120Z] [ERROR] com.example.ledger.StatementExportTest.exportsQuarter -- Time elapsed: 0.61 s <<< ERROR!
+[2026-09-16T09:12:41.120Z] java.lang.OutOfMemoryError: Java heap space
+[2026-09-16T09:12:41.121Z] [ERROR] com.example.ledger.StatementExportTest.exportsMonth -- Time elapsed: 0.58 s <<< ERROR!
+[2026-09-16T09:12:41.121Z] java.lang.OutOfMemoryError: Java heap space
+[2026-09-16T09:12:41.300Z] [INFO]
+[2026-09-16T09:12:41.300Z] [INFO] Results:
+[2026-09-16T09:12:41.300Z] [INFO]
+[2026-09-16T09:12:41.301Z] [ERROR] Errors:
+[2026-09-16T09:12:41.301Z] [ERROR]   StatementExportTest.exportsFullYear:41 » OutOfMemory Java heap space
+[2026-09-16T09:12:41.301Z] [ERROR]   StatementExportTest.exportsQuarter:52 » OutOfMemory Java heap space
+[2026-09-16T09:12:41.301Z] [ERROR]   StatementExportTest.exportsMonth:63 » OutOfMemory Java heap space
+[2026-09-16T09:12:41.302Z] [INFO]
+[2026-09-16T09:12:41.302Z] [ERROR] Tests run: 24, Failures: 0, Errors: 3, Skipped: 0
+[2026-09-16T09:12:41.302Z] [INFO]
+[2026-09-16T09:12:41.400Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T09:12:41.400Z] [INFO] BUILD FAILURE
+[2026-09-16T09:12:41.400Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T09:12:41.401Z] [INFO] Total time:  38.9 s
+[2026-09-16T09:12:41.401Z] [INFO] Finished at: 2026-09-16T09:12:41Z
+[2026-09-16T09:12:41.401Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T09:12:41.402Z] [ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project ledger-service:
+[2026-09-16T09:12:41.402Z] [ERROR] There are test failures.
+[2026-09-16T09:12:41.402Z] [ERROR] -> [Help 1]
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

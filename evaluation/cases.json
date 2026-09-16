@@ -5,7 +5,9 @@
     "expected_category": "authentication",
     "expected_severity": "high",
     "key_phrase": "Could not resolve dependencies",
-    "secrets": ["AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"]
+    "secrets": [
+      "AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"
+    ]
   },
   {
     "id": "docker-missing-file",
@@ -13,7 +15,9 @@
     "expected_category": "container_build",
     "expected_severity": "medium",
     "key_phrase": "failed to solve",
-    "secrets": ["ghp_Xk92JqLmN3vP8sT4wR7yB1zC5dF6gH0aE2iU"]
+    "secrets": [
+      "ghp_Xk92JqLmN3vP8sT4wR7yB1zC5dF6gH0aE2iU"
+    ]
   },
   {
     "id": "k8s-image-pull-backoff",
@@ -21,7 +25,9 @@
     "expected_category": "kubernetes_deployment",
     "expected_severity": "high",
     "key_phrase": "ImagePullBackOff",
-    "secrets": ["QmFzZTY0U2lnbmF0dXJlR29lc0hlcmVBbmRJdElzTG9uZw"]
+    "secrets": [
+      "QmFzZTY0U2lnbmF0dXJlR29lc0hlcmVBbmRJdElzTG9uZw"
+    ]
   },
   {
     "id": "gradle-test-failure",
@@ -29,7 +35,9 @@
     "expected_category": "test_failure",
     "expected_severity": "medium",
     "key_phrase": "There were failing tests",
-    "secrets": ["AKCp8zQ1wErTyU7iOpAsDfGhJkLzXcVbNm"]
+    "secrets": [
+      "AKCp8zQ1wErTyU7iOpAsDfGhJkLzXcVbNm"
+    ]
   },
   {
     "id": "npm-401",
@@ -37,7 +45,9 @@
     "expected_category": "authentication",
     "expected_severity": "high",
     "key_phrase": "npm ERR! code E401",
-    "secrets": ["npm_9aB8cD7eF6gH5iJ4kL3mN2oP1qR0sT9uV8wX"]
+    "secrets": [
+      "npm_9aB8cD7eF6gH5iJ4kL3mN2oP1qR0sT9uV8wX"
+    ]
   },
   {
     "id": "pip-no-distribution",
@@ -45,7 +55,9 @@
     "expected_category": "dependency_resolution",
     "expected_severity": "high",
     "key_phrase": "No matching distribution found",
-    "secrets": ["pypi-AgEIcHlwaS5vcmcCJDk0YjE1NWUw"]
+    "secrets": [
+      "pypi-AgEIcHlwaS5vcmcCJDk0YjE1NWUw"
+    ]
   },
   {
     "id": "helm-upgrade-timeout",
@@ -53,7 +65,9 @@
     "expected_category": "kubernetes_deployment",
     "expected_severity": "critical",
     "key_phrase": "CrashLoopBackOff",
-    "secrets": ["Pg$uper$ecret2026"]
+    "secrets": [
+      "Pg$uper$ecret2026"
+    ]
   },
   {
     "id": "artifactory-403",
@@ -61,6 +75,41 @@
     "expected_category": "authorization",
     "expected_severity": "high",
     "key_phrase": "lacks deploy permission",
-    "secrets": ["AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"]
+    "secrets": [
+      "AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"
+    ]
+  },
+  {
+    "id": "maven-jvm-oom",
+    "log": "maven/jvm_out_of_memory.log",
+    "expected_category": "resource_limit",
+    "expected_severity": "high",
+    "rule_based_expected": "test_failure",
+    "key_phrase": "OutOfMemoryError",
+    "secrets": [
+      "sqp_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+    ]
+  },
+  {
+    "id": "k8s-pod-evicted",
+    "log": "kubernetes/pod_evicted_ephemeral_storage.log",
+    "expected_category": "resource_limit",
+    "expected_severity": "critical",
+    "rule_based_expected": "kubernetes_deployment",
+    "key_phrase": "ephemeral-storage",
+    "secrets": [
+      "k8s-ci-7Hq2Lm9Xp4Rt1Wz8Vb3Ny6Kd0Sf5Gj"
+    ]
+  },
+  {
+    "id": "artifactory-503",
+    "log": "artifactory/service_unavailable_503.log",
+    "expected_category": "artifact_repository",
+    "expected_severity": "high",
+    "rule_based_expected": "dependency_resolution",
+    "key_phrase": "Service Unavailable",
+    "secrets": [
+      "AKCp5mN8xQ2wE7rT1yU4iO9pA3sD6fG0h"
+    ]
   }
 ]

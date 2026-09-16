@@ -71,6 +71,14 @@ def test_bad_labels_are_rejected(field: str, bad_value: object) -> None:
         EvalCase.model_validate({**_valid(), field: bad_value})
 
 
+def test_documented_gap_defaults_to_agreeing_with_the_label() -> None:
+    case = EvalCase.model_validate(_valid())
+    gap = EvalCase.model_validate({**_valid(), "rule_based_expected": "network"})
+
+    assert case.category_the_rules_should_return is FailureCategory.AUTHENTICATION
+    assert gap.category_the_rules_should_return is FailureCategory.NETWORK
+
+
 def test_unknown_fields_are_rejected() -> None:
     with pytest.raises(ValidationError):
         EvalCase.model_validate({**_valid(), "note": "typo in a label name must not pass"})

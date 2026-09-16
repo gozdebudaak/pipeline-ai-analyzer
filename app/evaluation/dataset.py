@@ -28,8 +28,16 @@ class EvalCase(BaseModel):
     log: str = Field(description="Path relative to sample_logs/")
     expected_category: FailureCategory
     expected_severity: Severity
+    # A documented gap: what the rules return today when they are known to disagree with
+    # the human label. The integration test pins this value (a rule change that closes the
+    # gap must update the label); the evaluation still scores against expected_category.
+    rule_based_expected: FailureCategory | None = None
     key_phrase: str = Field(min_length=1, description="Must survive into the excerpt")
     secrets: list[str] = Field(min_length=1, description="Planted values that must not leak")
+
+    @property
+    def category_the_rules_should_return(self) -> FailureCategory:
+        return self.rule_based_expected or self.expected_category
 
     @property
     def log_path(self) -> Path:

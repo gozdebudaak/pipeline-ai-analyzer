@@ -4,12 +4,24 @@ from app.services.failure_classifier import FailureCategory
 
 
 def test_offline_run_on_the_default_set_is_clean() -> None:
-    report = run_offline(load_cases())
+    cases = load_cases()
+    report = run_offline(cases)
 
-    assert report.total >= 8
-    assert report.category_accuracy == 1.0
+    assert report.total >= 11
     assert report.key_phrase_rate == 1.0
     assert report.leaks == []
+
+
+def test_hard_cases_pull_accuracy_below_one_and_are_marked_known() -> None:
+    """A gauge that always reads 100% measures nothing: the set must contain rule misses."""
+    cases = load_cases()
+    report = run_offline(cases)
+    gaps = [c for c in cases if c.rule_based_expected is not None]
+
+    assert gaps, "the dataset needs cases the rules get wrong"
+    assert report.category_accuracy == (report.total - len(gaps)) / report.total
+    assert all(r.known_gap for r in report.results if not r.category_ok)
+    assert "(known)" in format_report(report)
 
 
 def test_a_wrong_label_lowers_accuracy_instead_of_failing() -> None:

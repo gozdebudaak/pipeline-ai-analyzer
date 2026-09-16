@@ -1,0 +1,28 @@
+[Pipeline] { (Build)
+[2026-09-16T11:30:00.000Z] + export ARTIFACTORY_PASSWORD=AKCp5mN8xQ2wE7rT1yU4iO9pA3sD6fG0h
+[2026-09-16T11:30:00.001Z] + mvn -B -s settings.xml clean package
+[2026-09-16T11:30:01.200Z] [INFO] Scanning for projects...
+[2026-09-16T11:30:01.900Z] [INFO] ------------------< com.example:billing-service >-------------------
+[2026-09-16T11:30:01.900Z] [INFO] Building billing-service 5.0.3
+[2026-09-16T11:30:01.901Z] [INFO] --------------------------------[ jar ]---------------------------------
+[2026-09-16T11:30:02.100Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/com/example/platform/billing-commons/4.2.0/billing-commons-4.2.0.pom
+[2026-09-16T11:30:32.300Z] [WARNING] Could not transfer metadata com.example.platform:billing-commons:4.2.0/maven-metadata.xml from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 503, reason phrase: Service Unavailable (503)
+[2026-09-16T11:30:32.400Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/com/example/platform/billing-commons/4.2.0/billing-commons-4.2.0.jar
+[2026-09-16T11:31:02.600Z] [WARNING] Could not transfer metadata com.example.platform:billing-commons:4.2.0/maven-metadata.xml from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 503, reason phrase: Service Unavailable (503)
+[2026-09-16T11:31:02.700Z] [INFO] Downloading from artifactory: https://artifactory.example.com/artifactory/libs-release/com/example/platform/audit-client/1.7.2/audit-client-1.7.2.pom
+[2026-09-16T11:31:32.900Z] [WARNING] Could not transfer metadata com.example.platform:audit-client:1.7.2/maven-metadata.xml from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 503, reason phrase: Service Unavailable (503)
+[2026-09-16T11:31:33.000Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T11:31:33.000Z] [INFO] BUILD FAILURE
+[2026-09-16T11:31:33.000Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T11:31:33.001Z] [INFO] Total time:  1 min 31 s
+[2026-09-16T11:31:33.001Z] [INFO] Finished at: 2026-09-16T11:31:33Z
+[2026-09-16T11:31:33.001Z] [INFO] ------------------------------------------------------------------------
+[2026-09-16T11:31:33.002Z] [ERROR] Failed to execute goal on project billing-service: Could not resolve dependencies for project com.example:billing-service:jar:5.0.3
+[2026-09-16T11:31:33.002Z] [ERROR] dependency: com.example.platform:billing-commons:jar:4.2.0 (compile)
+[2026-09-16T11:31:33.002Z] [ERROR] 	Could not transfer artifact com.example.platform:billing-commons:pom:4.2.0 from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 503, reason phrase: Service Unavailable (503)
+[2026-09-16T11:31:33.002Z] [ERROR] dependency: com.example.platform:audit-client:jar:1.7.2 (compile)
+[2026-09-16T11:31:33.002Z] [ERROR] 	Could not transfer artifact com.example.platform:audit-client:pom:1.7.2 from/to artifactory (https://artifactory.example.com/artifactory/libs-release): status code: 503, reason phrase: Service Unavailable (503)
+[2026-09-16T11:31:33.003Z] [ERROR] -> [Help 1]
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

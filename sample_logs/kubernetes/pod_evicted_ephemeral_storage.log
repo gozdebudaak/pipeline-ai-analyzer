@@ -1,0 +1,35 @@
+[Pipeline] { (Deploy)
+[2026-09-16T10:02:00.000Z] + kubectl config set-credentials ci --token=k8s-ci-7Hq2Lm9Xp4Rt1Wz8Vb3Ny6Kd0Sf5Gj
+[2026-09-16T10:02:00.120Z] User "ci" set.
+[2026-09-16T10:02:00.300Z] + kubectl -n reports set image deployment/report-api api=registry.example.com/report-api:3.8.1
+[2026-09-16T10:02:00.910Z] deployment.apps/report-api image updated
+[2026-09-16T10:02:00.950Z] + kubectl -n reports rollout status deployment/report-api --timeout=300s
+[2026-09-16T10:02:01.400Z] Waiting for deployment "report-api" rollout to finish: 1 out of 2 new replicas have been updated...
+[2026-09-16T10:02:31.400Z] Waiting for deployment "report-api" rollout to finish: 1 out of 2 new replicas have been updated...
+[2026-09-16T10:03:01.400Z] Waiting for deployment "report-api" rollout to finish: 1 out of 2 new replicas have been updated...
+[2026-09-16T10:03:31.400Z] Waiting for deployment "report-api" rollout to finish: 1 out of 2 new replicas have been updated...
+[2026-09-16T10:04:01.400Z] Waiting for deployment "report-api" rollout to finish: 1 out of 2 new replicas have been updated...
+[2026-09-16T10:07:01.500Z] error: deployment "report-api" exceeded its progress deadline
+[2026-09-16T10:07:01.600Z] + kubectl -n reports get pods -l app=report-api
+[2026-09-16T10:07:02.010Z] NAME                          READY   STATUS    RESTARTS   AGE
+[2026-09-16T10:07:02.010Z] report-api-5b8c7d9f4-q2w8x    0/1     Evicted   0          4m
+[2026-09-16T10:07:02.010Z] report-api-5b8c7d9f4-t7y3k    0/1     Evicted   0          2m
+[2026-09-16T10:07:02.010Z] report-api-7c6d5e8a1-m4n9p    1/1     Running   0          3d
+[2026-09-16T10:07:02.100Z] + kubectl -n reports describe pod report-api-5b8c7d9f4-q2w8x
+[2026-09-16T10:07:02.500Z] Name:             report-api-5b8c7d9f4-q2w8x
+[2026-09-16T10:07:02.500Z] Namespace:        reports
+[2026-09-16T10:07:02.500Z] Node:             worker-11/10.0.3.11
+[2026-09-16T10:07:02.500Z] Status:           Failed
+[2026-09-16T10:07:02.500Z] Reason:           Evicted
+[2026-09-16T10:07:02.500Z] Message:          The node was low on resource: ephemeral-storage. Threshold quantity: 2Gi, available: 1536Mi. Container api was using 3892Mi, request is 0, has larger consumption of ephemeral-storage.
+[2026-09-16T10:07:02.500Z] Events:
+[2026-09-16T10:07:02.500Z]   Type     Reason     Age   From               Message
+[2026-09-16T10:07:02.500Z]   ----     ------     ----  ----               -------
+[2026-09-16T10:07:02.500Z]   Normal   Scheduled  4m    default-scheduler  Successfully assigned reports/report-api-5b8c7d9f4-q2w8x to worker-11
+[2026-09-16T10:07:02.500Z]   Normal   Pulled     4m    kubelet            Container image "registry.example.com/report-api:3.8.1" already present on machine
+[2026-09-16T10:07:02.500Z]   Normal   Started    4m    kubelet            Started container api
+[2026-09-16T10:07:02.500Z]   Warning  Evicted    3m    kubelet            The node was low on resource: ephemeral-storage. Container api was using 3892Mi, which exceeds its request of 0.
+[2026-09-16T10:07:02.500Z]   Normal   Killing    3m    kubelet            Stopping container api
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE
