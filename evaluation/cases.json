@@ -1,0 +1,66 @@
+[
+  {
+    "id": "maven-401",
+    "log": "maven/dependency_resolution_401.log",
+    "expected_category": "authentication",
+    "expected_severity": "high",
+    "key_phrase": "Could not resolve dependencies",
+    "secrets": ["AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"]
+  },
+  {
+    "id": "docker-missing-file",
+    "log": "docker/build_failed_missing_file.log",
+    "expected_category": "container_build",
+    "expected_severity": "medium",
+    "key_phrase": "failed to solve",
+    "secrets": ["ghp_Xk92JqLmN3vP8sT4wR7yB1zC5dF6gH0aE2iU"]
+  },
+  {
+    "id": "k8s-image-pull-backoff",
+    "log": "kubernetes/image_pull_backoff.log",
+    "expected_category": "kubernetes_deployment",
+    "expected_severity": "high",
+    "key_phrase": "ImagePullBackOff",
+    "secrets": ["QmFzZTY0U2lnbmF0dXJlR29lc0hlcmVBbmRJdElzTG9uZw"]
+  },
+  {
+    "id": "gradle-test-failure",
+    "log": "gradle/test_failure.log",
+    "expected_category": "test_failure",
+    "expected_severity": "medium",
+    "key_phrase": "There were failing tests",
+    "secrets": ["AKCp8zQ1wErTyU7iOpAsDfGhJkLzXcVbNm"]
+  },
+  {
+    "id": "npm-401",
+    "log": "npm/registry_401.log",
+    "expected_category": "authentication",
+    "expected_severity": "high",
+    "key_phrase": "npm ERR! code E401",
+    "secrets": ["npm_9aB8cD7eF6gH5iJ4kL3mN2oP1qR0sT9uV8wX"]
+  },
+  {
+    "id": "pip-no-distribution",
+    "log": "pip/no_matching_distribution.log",
+    "expected_category": "dependency_resolution",
+    "expected_severity": "high",
+    "key_phrase": "No matching distribution found",
+    "secrets": ["pypi-AgEIcHlwaS5vcmcCJDk0YjE1NWUw"]
+  },
+  {
+    "id": "helm-upgrade-timeout",
+    "log": "helm/upgrade_timeout.log",
+    "expected_category": "kubernetes_deployment",
+    "expected_severity": "critical",
+    "key_phrase": "CrashLoopBackOff",
+    "secrets": ["Pg$uper$ecret2026"]
+  },
+  {
+    "id": "artifactory-403",
+    "log": "artifactory/upload_forbidden_403.log",
+    "expected_category": "authorization",
+    "expected_severity": "high",
+    "key_phrase": "lacks deploy permission",
+    "secrets": ["AKCp8k3Jd9sLx2mQw7vB4nH6tY1uZ0pR"]
+  }
+]
