@@ -55,6 +55,7 @@ def test_analyze_returns_structured_result(client: TestClient) -> None:
     assert body["rule_based"]["agrees_with_model"] is True
     assert "http_401" in body["rule_based"]["matched_rules"]
     assert body["log_stats"]["secrets_redacted"] >= 1
+    assert body["log_stats"]["estimated_tokens"] > 0
     assert body["llm"]["provider"] == "fake"
     assert body["source"] == "jenkins"
     assert body["metadata"] == {"job": "payment-service", "build": "142"}

@@ -45,6 +45,7 @@ async def analyze(
             total_lines=stats.total_lines,
             normalized_lines=stats.normalized_lines,
             excerpt_lines=stats.excerpt_lines,
+            estimated_tokens=stats.estimated_tokens,
             truncated=stats.truncated,
             secrets_redacted=stats.secrets_redacted,
         ),

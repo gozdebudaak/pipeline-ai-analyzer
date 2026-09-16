@@ -31,6 +31,7 @@ class LogStats:
     total_lines: int
     normalized_lines: int
     excerpt_lines: int
+    estimated_tokens: int
     truncated: bool
     secrets_redacted: int
 
@@ -99,6 +100,7 @@ class AnalysisService:
             total_lines=processed.total_lines,
             normalized_lines=processed.normalized_lines,
             excerpt_lines=processed.excerpt_lines,
+            estimated_tokens=processed.estimated_tokens,
             truncated=processed.truncated,
             secrets_redacted=redacted.total,
         )

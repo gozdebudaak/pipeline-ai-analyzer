@@ -120,7 +120,7 @@ Response (abridged):
     "suggested_actions": ["Verify the repository credentials configured in the pipeline."]
   },
   "rule_based": {"category": "authentication", "matched_rules": ["http_401"], "agrees_with_model": true},
-  "log_stats": {"total_lines": 57, "normalized_lines": 33, "excerpt_lines": 33, "truncated": false, "secrets_redacted": 4},
+  "log_stats": {"total_lines": 57, "normalized_lines": 33, "excerpt_lines": 33, "estimated_tokens": 640, "truncated": false, "secrets_redacted": 4},
   "llm": {"provider": "openai", "model": "gpt-5.4-mini", "input_tokens": 1512, "output_tokens": 290, "prompt_version": "1"}
 }
 ```

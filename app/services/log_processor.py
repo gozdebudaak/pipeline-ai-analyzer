@@ -10,6 +10,7 @@ Stage 2 (``extract``): locate error regions and keep them with surrounding
 context, within a size budget. ``process`` runs both.
 """
 
+import math
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -123,6 +124,7 @@ class LogProcessor:
             total_lines=normalized.total_lines,
             normalized_lines=normalized.kept_lines,
             excerpt_lines=len(excerpt.splitlines()) if excerpt else 0,
+            estimated_tokens=estimate_tokens(excerpt),
             truncated=truncated,
         )
 
@@ -264,13 +266,27 @@ def is_warning_line(line: str) -> bool:
     return any(p.search(line) for p in WARNING_PATTERNS)
 
 
+# Rough tokenizer-free estimate: in English text and code one token is about
+# four characters. Good enough for a budget; the provider reports the exact
+# count afterwards so the estimate can be checked against reality.
+CHARS_PER_TOKEN = 4
+
+
+def estimate_tokens(text: str) -> int:
+    return math.ceil(len(text) / CHARS_PER_TOKEN) if text else 0
+
+
 @dataclass(frozen=True)
 class ExtractionConfig:
     context_before: int = 15  # the cause is usually printed before the error
     context_after: int = 5
     tail_lines: int = 20  # the build summary lives at the end of the log
     max_lines: int = 300
-    max_chars: int = 12_000
+    max_tokens: int = 3_000  # what the model will be asked to read, roughly
+
+    @property
+    def max_chars(self) -> int:
+        return self.max_tokens * CHARS_PER_TOKEN
 
 
 @dataclass(frozen=True)
@@ -281,6 +297,7 @@ class ProcessedLog:
     total_lines: int  # raw input
     normalized_lines: int  # after stage 1
     excerpt_lines: int  # what the LLM will see
+    estimated_tokens: int  # rough size of the excerpt in tokens
     truncated: bool  # budget forced us to drop segments
 
     @property

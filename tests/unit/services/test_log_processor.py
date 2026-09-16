@@ -270,10 +270,31 @@ def test_custom_noise_patterns_can_be_injected() -> None:
 from app.services.log_processor import (  # noqa: E402
     SKIP_MARKER,
     ExtractionConfig,
+    estimate_tokens,
     extract,
     is_error_line,
     is_warning_line,
 )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [("", 0), ("abcd", 1), ("abcde", 2), ("x" * 400, 100)],
+)
+def test_estimate_tokens(text: str, expected: int) -> None:
+    assert estimate_tokens(text) == expected
+
+
+def test_token_budget_limits_the_excerpt() -> None:
+    lines = ["x" * 40] * 100  # 100 lines of 40 chars = ~10 tokens each
+    lines[50] = "[ERROR] boom" + "!" * 28
+    config = ExtractionConfig(context_before=30, context_after=30, tail_lines=0, max_tokens=100)
+
+    excerpt, truncated = extract(lines, config)
+
+    assert truncated
+    assert estimate_tokens(excerpt) <= 100 + 10  # skip markers add a little
+    assert "[ERROR] boom" in excerpt
 
 
 @pytest.mark.parametrize(
@@ -505,6 +526,7 @@ def test_process_end_to_end() -> None:
     assert result.total_lines == 506
     assert result.normalized_lines == 5
     assert result.first_error == "[ERROR] Failed to execute goal on project payment-service"
+    assert result.estimated_tokens == estimate_tokens(result.excerpt) > 0
     assert len(result.error_lines) == 3  # two [ERROR] lines + BUILD FAILURE
     assert result.warning_lines == ["[WARNING] Using platform encoding"]
     assert "Downloading" not in result.excerpt

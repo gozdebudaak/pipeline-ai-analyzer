@@ -37,6 +37,7 @@ class LogStatsOut(BaseModel):
     total_lines: int
     normalized_lines: int
     excerpt_lines: int
+    estimated_tokens: int = Field(description="Rough size of the excerpt sent to the model.")
     truncated: bool
     secrets_redacted: int
 
