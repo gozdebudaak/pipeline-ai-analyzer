@@ -139,6 +139,81 @@ DEFAULT_RULES: tuple[ClassificationRule, ...] = (
         9,
         "medium",
     ),
+    # --- Gradle -------------------------------------------------------------------
+    _rule(
+        "gradle_dependency",
+        C.DEPENDENCY_RESOLUTION,
+        r"Could not resolve all (?:files|dependencies|artifacts) for configuration|Could not resolve [\w.:-]+\.$",
+        8,
+        "high",
+    ),
+    _rule(
+        "gradle_compilation",
+        C.COMPILATION,
+        r"Execution failed for task '[^']*compile(?:Java|Kotlin)'|Compilation failed; see the compiler error output",
+        8,
+        "medium",
+    ),
+    _rule(
+        "gradle_tests",
+        C.TEST_FAILURE,
+        r"There were failing tests|Execution failed for task '[^']*:test'|> Task :\S*[tT]est FAILED",
+        9,
+        "medium",
+    ),
+    # --- npm / Node ---------------------------------------------------------------
+    _rule(
+        "npm_auth",
+        C.AUTHENTICATION,
+        r"npm ERR! code E401|npm ERR! Unable to authenticate",
+        10,
+        "high",
+    ),
+    _rule("npm_forbidden", C.AUTHORIZATION, r"npm ERR! code E403", 10, "high"),
+    _rule(
+        "npm_dependency",
+        C.DEPENDENCY_RESOLUTION,
+        r"npm ERR! code E404|npm ERR! code ERESOLVE|npm ERR! code ETARGET|No matching version found for",
+        9,
+        "high",
+    ),
+    _rule(
+        "npm_network",
+        C.NETWORK,
+        r"npm ERR! code (?:ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET)",
+        9,
+        "high",
+    ),
+    # --- pip / Python -------------------------------------------------------------
+    _rule(
+        "pip_dependency",
+        C.DEPENDENCY_RESOLUTION,
+        r"No matching distribution found for|Could not find a version that satisfies the requirement|ResolutionImpossible",
+        9,
+        "high",
+    ),
+    # --- Helm ---------------------------------------------------------------------
+    _rule(
+        "helm_release_failed",
+        C.KUBERNETES_DEPLOYMENT,
+        r"Error: (?:UPGRADE|INSTALLATION) FAILED",
+        6,
+        "high",
+    ),
+    _rule(
+        "helm_values_invalid",
+        C.CONFIGURATION,
+        r"values don't meet the specifications of the schema|YAML parse error|error converting YAML to JSON",
+        9,
+        "medium",
+    ),
+    _rule(
+        "k8s_timeout_waiting",
+        C.KUBERNETES_DEPLOYMENT,
+        r"timed out waiting for the condition|context deadline exceeded",
+        5,
+        "high",
+    ),
     # --- Artifactory --------------------------------------------------------------
     _rule("artifactory", C.ARTIFACT_REPOSITORY, r"artifactory", 2),
     # --- Cross-cutting ------------------------------------------------------------

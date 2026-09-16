@@ -110,6 +110,41 @@ def classifier() -> FailureClassifier:
             FailureCategory.CONFIGURATION,
             "missing_env_var",
         ),
+        (
+            "> Could not resolve all files for configuration ':compileClasspath'.",
+            FailureCategory.DEPENDENCY_RESOLUTION,
+            "gradle_dependency",
+        ),
+        (
+            "Execution failed for task ':compileJava'.",
+            FailureCategory.COMPILATION,
+            "gradle_compilation",
+        ),
+        (
+            "> There were failing tests. See the report at: file:///workspace/build/reports/tests/test/index.html",
+            FailureCategory.TEST_FAILURE,
+            "gradle_tests",
+        ),
+        ("> Task :test FAILED", FailureCategory.TEST_FAILURE, "gradle_tests"),
+        ("npm ERR! code E401", FailureCategory.AUTHENTICATION, "npm_auth"),
+        ("npm ERR! code E403", FailureCategory.AUTHORIZATION, "npm_forbidden"),
+        ("npm ERR! code ERESOLVE", FailureCategory.DEPENDENCY_RESOLUTION, "npm_dependency"),
+        ("npm ERR! code ENOTFOUND", FailureCategory.NETWORK, "npm_network"),
+        (
+            "ERROR: No matching distribution found for example-payments-sdk==3.2.0",
+            FailureCategory.DEPENDENCY_RESOLUTION,
+            "pip_dependency",
+        ),
+        (
+            "Error: UPGRADE FAILED: timed out waiting for the condition",
+            FailureCategory.KUBERNETES_DEPLOYMENT,
+            "helm_release_failed",
+        ),
+        (
+            "Error: values don't meet the specifications of the schema(s) in the following chart(s):",
+            FailureCategory.CONFIGURATION,
+            "helm_values_invalid",
+        ),
     ],
 )
 def test_single_line_classification(

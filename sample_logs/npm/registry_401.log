@@ -1,0 +1,15 @@
+[Pipeline] { (Install)
+[2026-09-16T07:20:00.000Z] + echo '//npm.example.com/:_authToken=npm_9aB8cD7eF6gH5iJ4kL3mN2oP1qR0sT9uV8wX' > .npmrc
+[2026-09-16T07:20:00.010Z] + npm ci --registry=https://npm.example.com/
+[2026-09-16T07:20:01.200Z] npm WARN config production Use `--omit=dev` instead.
+[2026-09-16T07:20:01.300Z] npm WARN deprecated request@2.88.2: request has been deprecated
+[2026-09-16T07:20:04.900Z] npm ERR! code E401
+[2026-09-16T07:20:04.901Z] npm ERR! 401 Unauthorized - GET https://npm.example.com/@example%2fui-kit - authentication token expired
+[2026-09-16T07:20:04.901Z] npm ERR!
+[2026-09-16T07:20:04.901Z] npm ERR! Unable to authenticate, your authentication token seems to be invalid.
+[2026-09-16T07:20:04.901Z] npm ERR! To correct this please try logging in again with:
+[2026-09-16T07:20:04.901Z] npm ERR!     npm login
+[2026-09-16T07:20:04.905Z] npm ERR! A complete log of this run can be found in: /root/.npm/_logs/2026-09-16T07_20_04_905Z-debug-0.log
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

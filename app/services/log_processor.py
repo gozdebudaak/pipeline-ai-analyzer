@@ -46,6 +46,7 @@ NOISE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"^(?:Get|Hit|Ign):\d+ https?://"),  # apt package index fetches
     re.compile(r"^(?:Collecting|Requirement already satisfied|Using cached)[: ]"),  # pip
     re.compile(r"^npm (?:WARN|notice) "),  # npm chatter
+    re.compile(r"^> Task :\S+ (?:UP-TO-DATE|FROM-CACHE|NO-SOURCE|SKIPPED)$"),  # gradle task status
     re.compile(r"^\s*[─-╿▀-▟]+\s*$"),  # box-drawing / progress bar glyphs
 )
 
@@ -229,6 +230,11 @@ ERROR_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b\w*(?:Exception|Error)\b(?::|\s+at\b|$)"),  # NullPointerException: / ValueError:
     re.compile(r"^Traceback \(most recent call last\)"),
     re.compile(r"^\s*(?:error|fatal|panic):", re.IGNORECASE),  # kubectl/git/docker "error: ..."
+    re.compile(r"^npm ERR!"),  # npm prefixes every error line this way
+    re.compile(  # gradle: lowercase wording around the failure summary
+        r"^(?:\* What went wrong:|> There were failing tests|Execution failed for task"
+        r"|\d+ tests completed, [1-9]\d* failed)"
+    ),
     re.compile(r"\bexit (?:code|status)[: =]+[1-9]\d*\b"),
     re.compile(
         r"\b(?:ImagePullBackOff|ErrImagePull|CrashLoopBackOff|OOMKilled|"

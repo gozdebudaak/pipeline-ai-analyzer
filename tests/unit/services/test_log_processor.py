@@ -51,6 +51,7 @@ def test_strip_timestamp(line: str, expected: str) -> None:
         "Get:3 http://deb.debian.org/debian bookworm/main arm64 Packages [8,000 kB]",
         "Requirement already satisfied: idna in ./.venv/lib",
         "npm WARN deprecated request@2.88.2",
+        "> Task :processResources UP-TO-DATE",
     ],
 )
 def test_noise_lines_are_detected(line: str) -> None:
@@ -320,6 +321,10 @@ def test_token_budget_limits_the_excerpt() -> None:
         "dial tcp 10.0.0.5:5432: connect: connection refused",
         "Tests run: 12, Failures: 1, Errors: 0, Skipped: 0 <<< FAILURE!",
         'error: deployment "api" exceeded its progress deadline',  # kubectl, lowercase
+        "npm ERR! code E401",
+        "Execution failed for task ':test'.",  # gradle, lowercase
+        "> There were failing tests. See the report at: file:///x/index.html",
+        "48 tests completed, 1 failed",
         "fatal: not a git repository (or any of the parent directories): .git",
         "error: failed to solve: process did not complete successfully",  # docker buildx
     ],

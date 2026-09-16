@@ -1,0 +1,37 @@
+[Pipeline] { (Build)
+[2026-09-16T07:10:01.000Z] + export GRADLE_OPTS=-Dorg.gradle.daemon=false
+[2026-09-16T07:10:01.001Z] + export ORG_GRADLE_PROJECT_artifactoryPassword=AKCp8zQ1wErTyU7iOpAsDfGhJkLzXcVbNm
+[2026-09-16T07:10:01.002Z] + ./gradlew --no-daemon clean test
+[2026-09-16T07:10:04.310Z] Starting a Gradle Daemon (subsequent builds will be faster)
+[2026-09-16T07:10:09.120Z] > Task :clean
+[2026-09-16T07:10:09.500Z] > Task :compileJava
+[2026-09-16T07:10:15.210Z] > Task :processResources UP-TO-DATE
+[2026-09-16T07:10:15.211Z] > Task :classes
+[2026-09-16T07:10:15.900Z] > Task :compileTestJava
+[2026-09-16T07:10:18.400Z] > Task :processTestResources NO-SOURCE
+[2026-09-16T07:10:18.401Z] > Task :testClasses
+[2026-09-16T07:10:18.900Z] > Task :test
+[2026-09-16T07:10:31.020Z]
+[2026-09-16T07:10:31.020Z] PaymentServiceTest > shouldRefundWhenOrderIsCancelled() FAILED
+[2026-09-16T07:10:31.020Z]     org.opentest4j.AssertionFailedError: expected: <REFUNDED> but was: <PENDING>
+[2026-09-16T07:10:31.020Z]         at app//org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+[2026-09-16T07:10:31.020Z]         at app//com.example.payment.PaymentServiceTest.shouldRefundWhenOrderIsCancelled(PaymentServiceTest.java:88)
+[2026-09-16T07:10:31.020Z]
+[2026-09-16T07:10:31.400Z] 48 tests completed, 1 failed
+[2026-09-16T07:10:31.400Z]
+[2026-09-16T07:10:31.401Z] > Task :test FAILED
+[2026-09-16T07:10:31.402Z]
+[2026-09-16T07:10:31.402Z] FAILURE: Build failed with an exception.
+[2026-09-16T07:10:31.402Z]
+[2026-09-16T07:10:31.402Z] * What went wrong:
+[2026-09-16T07:10:31.402Z] Execution failed for task ':test'.
+[2026-09-16T07:10:31.402Z] > There were failing tests. See the report at: file:///workspace/build/reports/tests/test/index.html
+[2026-09-16T07:10:31.402Z]
+[2026-09-16T07:10:31.402Z] * Try:
+[2026-09-16T07:10:31.402Z] > Run with --scan to get full insights.
+[2026-09-16T07:10:31.402Z]
+[2026-09-16T07:10:31.403Z] BUILD FAILED in 30s
+[2026-09-16T07:10:31.403Z] 7 actionable tasks: 6 executed, 1 up-to-date
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

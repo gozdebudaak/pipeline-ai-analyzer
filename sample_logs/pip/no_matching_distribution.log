@@ -1,0 +1,14 @@
+[Pipeline] { (Install dependencies)
+[2026-09-16T07:30:00.000Z] + export PIP_INDEX_URL=https://ci-bot:pypi-AgEIcHlwaS5vcmcCJDk0YjE1NWUw@pypi.example.com/simple
+[2026-09-16T07:30:00.001Z] + pip install -r requirements.txt
+[2026-09-16T07:30:01.500Z] Looking in indexes: https://ci-bot:****@pypi.example.com/simple
+[2026-09-16T07:30:01.900Z] Collecting fastapi==0.115.0
+[2026-09-16T07:30:02.100Z]   Downloading fastapi-0.115.0-py3-none-any.whl (94 kB)
+[2026-09-16T07:30:02.400Z] Collecting pydantic>=2.7
+[2026-09-16T07:30:02.600Z]   Downloading pydantic-2.13.5-py3-none-any.whl (450 kB)
+[2026-09-16T07:30:03.100Z] Collecting example-payments-sdk==3.2.0
+[2026-09-16T07:30:03.800Z] ERROR: Could not find a version that satisfies the requirement example-payments-sdk==3.2.0 (from versions: 3.0.0, 3.0.1, 3.1.0, 3.1.2)
+[2026-09-16T07:30:03.800Z] ERROR: No matching distribution found for example-payments-sdk==3.2.0
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE

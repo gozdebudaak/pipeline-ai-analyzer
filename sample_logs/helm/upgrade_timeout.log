@@ -1,0 +1,21 @@
+[Pipeline] { (Deploy)
+[2026-09-16T07:40:00.000Z] + export KUBECONFIG=/var/lib/jenkins/.kube/staging
+[2026-09-16T07:40:00.001Z] + helm upgrade --install payment-service ./charts/payment-service -n payments --set image.tag=1.4.3 --set db.password=Pg$uper$ecret2026 --wait --timeout 5m
+[2026-09-16T07:40:01.300Z] Release "payment-service" has been upgraded. Happy Helming!
+[2026-09-16T07:40:01.300Z] NAME: payment-service
+[2026-09-16T07:40:01.300Z] LAST DEPLOYED: Tue Sep 16 07:40:01 2026
+[2026-09-16T07:40:01.300Z] NAMESPACE: payments
+[2026-09-16T07:40:01.300Z] STATUS: pending-upgrade
+[2026-09-16T07:45:01.900Z] Error: UPGRADE FAILED: timed out waiting for the condition
+[2026-09-16T07:45:01.950Z] + kubectl -n payments get pods -l app=payment-service
+[2026-09-16T07:45:02.300Z] NAME                               READY   STATUS             RESTARTS      AGE
+[2026-09-16T07:45:02.300Z] payment-service-6f7d8c9b5-k2x9q    0/1     CrashLoopBackOff   5 (40s ago)   5m
+[2026-09-16T07:45:02.300Z] payment-service-6f7d8c9b5-p8m3w    0/1     CrashLoopBackOff   5 (35s ago)   5m
+[2026-09-16T07:45:02.310Z] + kubectl -n payments logs payment-service-6f7d8c9b5-k2x9q --previous --tail=5
+[2026-09-16T07:45:02.700Z] 2026-09-16 07:44:20,118 ERROR o.s.boot.SpringApplication - Application run failed
+[2026-09-16T07:45:02.700Z] org.postgresql.util.PSQLException: FATAL: password authentication failed for user "payments"
+[2026-09-16T07:45:02.700Z] 	at org.postgresql.core.v3.ConnectionFactoryImpl.doAuthentication(ConnectionFactoryImpl.java:693)
+[2026-09-16T07:45:02.700Z] 	at org.postgresql.core.v3.ConnectionFactoryImpl.tryConnect(ConnectionFactoryImpl.java:203)
+[Pipeline] }
+ERROR: script returned exit code 1
+Finished: FAILURE
