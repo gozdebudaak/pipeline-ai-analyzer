@@ -18,7 +18,7 @@ thin LLM wrapper.
 |-----------|-------|
 | MVP 0 | FastAPI skeleton, config, structured logging, health/ready, Docker, CI |
 | MVP 1 | `POST /api/v1/analyze`, secret redaction, log preprocessing, OpenAI provider |
-| MVP 2 | Deterministic failure rules, severity/confidence, token optimization |
+| MVP 2 | Smarter preprocessing, rule-based severity, wider redaction, evaluation set, Prometheus metrics |
 | MVP 3 | Jenkins integration (REST + webhooks) |
 | MVP 4 | PostgreSQL persistence, analysis history, Helm chart |
 
@@ -51,13 +51,15 @@ uv python install 3.12
 POST /api/v1/analyze {"log": "..."}
         │
         ▼
- SecretRedactor        passwords, tokens, keys, URL credentials -> [REDACTED]
+ SecretRedactor        named patterns (URL creds, headers, JWT, AWS/GCP/kubeconfig,
+                       webhooks) + a high-entropy safety net -> [REDACTED]
         │
         ▼
- LogProcessor          strip ANSI/timestamps, drop noise, fold repeats,
-                       keep error regions + context + tail within a budget
+ LogProcessor          strip ANSI/timestamps, mark long pauses, drop noise,
+                       fold repeats and near-repeats, keep error regions +
+                       context + tail within a line and token budget
         │
-        ├──────────────► FailureClassifier   weighted rule table -> category
+        ├──────────────► FailureClassifier   weighted rule table -> category + severity
         ▼
  PromptBuilder         system rules + <log_excerpt>  (no classifier hint)
         │
@@ -69,6 +71,7 @@ POST /api/v1/analyze {"log": "..."}
         │
         ▼
  reconcile()           model category vs rule-based category -> confidence adjusted
+                       (x0.7 on disagreement); severity disagreement is reported, not penalised
 ```
 
 Nothing derived from the log reaches the LLM before it has passed the
@@ -93,6 +96,8 @@ make lint         # ruff check + format check
 make format       # auto-fix lint issues and reformat
 make typecheck    # mypy
 make check        # lint + typecheck + test
+make eval         # score the rule-based chain on the labelled sample logs (offline)
+make eval-llm     # same, plus the configured model's answer per case (costs money)
 ```
 
 `uv run <cmd>` executes `<cmd>` inside the project's virtual environment, so
@@ -158,6 +163,67 @@ Run without touching OpenAI (the fake provider returns a canned analysis):
 APP_ENV=test make run
 ```
 
+## Evaluation
+
+`evaluation/cases.json` holds one human-written label per sample log:
+expected category and severity, a key phrase that must survive into the
+excerpt, and the planted secrets that must not leak. The integration tests
+and `make eval` read the same file, so the two can never disagree.
+
+```bash
+make eval
+```
+
+```text
+case                     category   severity  phrase  tokens  rules
+maven-401                ok         ok        ok         571  maven_dependency, artifactory, http_401
+...
+cases:             11
+category accuracy: 100%
+severity accuracy: 100%
+key phrase kept:   100%
+secret leaks:      0
+```
+
+Accuracy is a gauge, not a gate: a drop prints and exits 0 so a human can
+decide. A leaked secret exits 1. A case the rules are known to get wrong
+carries `rule_based_expected`; the test pins that value, the score still
+counts it as a miss and the report marks it `(known)`.
+
+`make eval-llm` runs every case through the model as well and prints the
+model's accuracy, the number of rule/model disagreements and who was right
+in each: the data behind the 0.7 confidence factor. Under `APP_ENV=test` it
+uses the fake provider; otherwise it calls the real model and costs money.
+
+## Observability
+
+Every request is logged as JSON with a correlation ID (`X-Request-ID`).
+`GET /metrics` exposes Prometheus metrics (pull model: nothing is pushed):
+
+| Metric | Labels | Answers |
+|--------|--------|---------|
+| `http_requests_total` | method, route template, status | request rate, error ratio |
+| `http_request_duration_seconds` | method, route template | latency percentiles |
+| `analysis_total` | outcome | success vs `llm_unavailable` / `llm_invalid_response` |
+| `analysis_category_total` | category, agreement | what is failing; rule/model disagreement rate |
+| `llm_request_duration_seconds` | provider | model latency, including failed calls |
+| `llm_tokens_total` | provider, direction | the bill |
+| `secrets_redacted_total` | pattern | the redactor at work |
+| `analysis_excerpt_tokens` | – | excerpt size vs the 3000-token budget |
+
+Labels only ever come from fixed sets (route templates, enums); raw URLs
+would create an unbounded number of time series. To see the numbers on a
+dashboard start the optional Prometheus service:
+
+```bash
+docker compose --profile monitoring up --build
+open http://127.0.0.1:9090      # Status -> Targets should show pipeline-ai-analyzer UP
+```
+
+Example queries: `rate(http_requests_total[5m])`,
+`histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m]))`,
+`sum(rate(llm_tokens_total[1h])) by (direction)`.
+
 ## Running with Docker
 
 ```bash
@@ -197,7 +263,9 @@ app/
   api/routes/health.py         /health and /ready
   api/errors.py                domain exceptions -> standard error envelope
   api/dependencies.py          how routes obtain the analysis service
-  api/middleware.py            correlation ID + request logging
+  api/middleware.py            correlation ID + request logging + request metrics
+  api/routes/metrics.py        GET /metrics (Prometheus text format)
+  core/metrics.py              metric definitions (counters, histograms) and the label rules
   core/config.py               settings from environment variables (pydantic-settings)
   core/logging.py              JSON log formatter with correlation ID
   schemas/analysis.py          AnalysisResult: the strict result schema
@@ -206,13 +274,17 @@ app/
   services/log_processor.py    normalises logs and extracts error regions within a budget
   services/failure_classifier.py  weighted rule table mapping error lines to a category
   services/prompt_builder.py   system + user messages sent to the model
-  services/analysis_service.py orchestration and rule-vs-model reconciliation
+  services/analysis_service.py orchestration, rule-vs-model reconciliation, domain metrics
+  evaluation/dataset.py        EvalCase labels: the single source of truth for sample logs
+  evaluation/runner.py         offline and LLM evaluation runs, plain-text report
   llm/base.py                  LLMProvider contract, error types, output validation gate
   llm/openai_provider.py       OpenAI implementation (structured output, error mapping)
   llm/fake.py                  no-network provider for tests and local runs
   llm/factory.py               picks the provider from settings; test env always gets the fake
   main.py                      FastAPI application factory
-sample_logs/                   realistic failure logs (Docker, Kubernetes, Maven, Artifactory)
+sample_logs/                   realistic failure logs (Maven, Gradle, npm, pip, Docker, Kubernetes, Helm, Artifactory)
+evaluation/cases.json          human labels for every sample log (used by tests and make eval)
+deploy/prometheus/             scrape config for the optional Prometheus service
                                with embedded fake secrets; used by the chain tests
 tests/
   conftest.py                  shared fixtures (TestClient)

@@ -13,3 +13,5 @@ sample_logs
 .DS_Store
 .idea
 .vscode
+evaluation
+deploy
