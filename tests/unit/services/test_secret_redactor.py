@@ -187,6 +187,47 @@ def test_kubeconfig_data_fields_are_redacted(redactor: SecretRedactor) -> None:
     assert result.counts == {"key_value": 3}
 
 
+def test_gcp_service_account_json(redactor: SecretRedactor) -> None:
+    sa_json = (
+        '{"type": "service_account", "project_id": "payments-prod",\n'
+        ' "private_key_id": "0123456789abcdef0123456789abcdef01234567",\n'
+        ' "private_key": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBg\\n'
+        '-----END PRIVATE KEY-----\\n",\n'
+        ' "client_email": "deployer@payments-prod.iam.gserviceaccount.com"}'
+    )
+
+    result = redactor.redact(sa_json)
+
+    assert "MIIEvQIBADANBg" not in result.text
+    assert "0123456789abcdef" not in result.text
+    assert '"project_id": "payments-prod"' in result.text
+    assert "deployer@payments-prod.iam.gserviceaccount.com" in result.text
+    assert result.counts == {"private_key_block": 1, "key_value": 1}
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://hooks.slack.com/services/T0123ABCD/B0123ABCD/AbCdEfGhIjKlMnOpQrStUvWx",
+        "https://discord.com/api/webhooks/123456789012345678/AbCdEfGhIjKlMnOpQrStUvWx-yz",
+    ],
+)
+def test_webhook_url_path_is_redacted(redactor: SecretRedactor, url: str) -> None:
+    result = redactor.redact(f'curl -X POST {url} -d \'{{"text": "build failed"}}\'')
+
+    assert url not in result.text
+    assert f"/{REDACTED} -d" in result.text
+    assert result.counts == {"webhook_url": 1}
+
+
+def test_webhook_secret_inside_env_var_is_redacted(redactor: SecretRedactor) -> None:
+    line = "SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T0123ABCD/B0123ABCD/AbCdEfGhIjKlMnOpQrStUvWx"
+
+    result = redactor.redact(line)
+
+    assert result.text == f"SLACK_WEBHOOK_URL=https://hooks.slack.com/services/{REDACTED}"
+
+
 def test_bare_aws_key_pair_is_fully_redacted(redactor: SecretRedactor) -> None:
     """The id has a prefix (AKIA), the secret has none: only its 40-char shape gives it away."""
     line = "creds: AKIAIOSFODNN7EXAMPLE / wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

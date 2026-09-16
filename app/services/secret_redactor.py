@@ -121,6 +121,14 @@ DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
         replacement=REDACTED,
     ),
     SecretPattern(
+        name="webhook_url",
+        regex=re.compile(
+            r"(?P<prefix>https://(?:hooks\.slack\.com/services/|discord(?:app)?\.com/api/webhooks/))"
+            r"[^\s\"'<>]+"
+        ),
+        replacement=rf"\g<prefix>{REDACTED}",
+    ),
+    SecretPattern(
         name="aws_secret_key",
         regex=re.compile(
             r"(?<![A-Za-z0-9/+=])(?![0-9a-fA-F]{40}(?![A-Za-z0-9/+=]))"
