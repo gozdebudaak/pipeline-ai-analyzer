@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check run docker-up docker-down
+.PHONY: install lint format typecheck test check eval run docker-up docker-down
 
 install:
 	uv sync --group dev
@@ -18,6 +18,9 @@ test:
 	APP_ENV=test uv run pytest -v
 
 check: lint typecheck test   ## everything CI checks, in one go
+
+eval:  ## score the rule-based chain on evaluation/cases.json (offline, no LLM)
+	uv run python -m app.evaluation
 
 run:
 	uv run uvicorn app.main:app --reload
