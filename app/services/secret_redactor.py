@@ -15,8 +15,10 @@ Design rules:
 """
 
 import re
-from collections.abc import Sequence
+from collections import Counter
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from math import log2
 
 REDACTED = "[REDACTED]"
 
@@ -27,7 +29,9 @@ class SecretPattern:
 
     name: str
     regex: re.Pattern[str]
-    replacement: str
+    # A string is substituted as is. A callable gets each match and returns the text to put
+    # in its place; returning the match unchanged means "not a secret after all".
+    replacement: str | Callable[[re.Match[str]], str]
 
 
 @dataclass(frozen=True)
@@ -47,6 +51,30 @@ _KEY_NAME_ALTERNATION = (
     r"certificate[_-]?data|key[_-]?data|certificate[_-]?authority[_-]?data|"
     r"private[_-]?key[_-]?id"
 )
+
+
+def shannon_entropy(text: str) -> float:
+    """Bits of information per character: 0.0 for "aaaa", up to 6.0 for random base64."""
+    n = len(text)
+    return -sum(c / n * log2(c / n) for c in Counter(text).values())
+
+
+ENTROPY_THRESHOLD = 4.0  # measured: AWS secret 4.66, git SHA 3.94, CamelCase identifier 3.90
+_CHECKSUM_PREFIXES = ("sha256-", "sha384-", "sha512-")  # npm/yarn integrity hashes
+
+
+def _redact_if_random(match: re.Match[str]) -> str:
+    """The safety net: no name, no prefix, no known shape, but it looks random."""
+    token = match.group(0)
+    if token.startswith(_CHECKSUM_PREFIXES):
+        return token
+    lower = sum(c.islower() for c in token)
+    upper = sum(c.isupper() for c in token)
+    digits = sum(c.isdigit() for c in token)
+    if min(lower, upper, digits) < 2:  # hex hashes, UUIDs, pod names, timestamps, plain words
+        return token
+    return REDACTED if shannon_entropy(token) >= ENTROPY_THRESHOLD else token
+
 
 DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
     # -----BEGIN RSA PRIVATE KEY----- ... -----END RSA PRIVATE KEY-----
@@ -151,6 +179,15 @@ DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
         ),
         replacement=rf"\g<key>\g<sep>\g<quote>{REDACTED}\g<quote>",
     ),
+    # Last resort: any 20+ character word from the base64/base64url alphabet that is mixed
+    # case with digits and has high Shannon entropy. Catches keys we have no pattern for.
+    # "/" and "=" are deliberately not word characters: they would glue paths and
+    # assignments (ARTIFACT=target/app-1) into one "random-looking" token.
+    SecretPattern(
+        name="high_entropy",
+        regex=re.compile(r"(?<![A-Za-z0-9+_-])[A-Za-z0-9+_-]{20,}={0,2}(?![A-Za-z0-9+_=-])"),
+        replacement=_redact_if_random,
+    ),
 )
 
 
@@ -163,7 +200,24 @@ class SecretRedactor:
     def redact(self, text: str) -> RedactionResult:
         counts: dict[str, int] = {}
         for pattern in self._patterns:
-            text, n = pattern.regex.subn(pattern.replacement, text)
+            text, n = _substitute(pattern, text)
             if n:
                 counts[pattern.name] = n
         return RedactionResult(text=text, counts=counts)
+
+
+def _substitute(pattern: SecretPattern, text: str) -> tuple[str, int]:
+    """Apply one pattern; count only matches that were actually changed."""
+    replacement = pattern.replacement
+    if isinstance(replacement, str):
+        return pattern.regex.subn(replacement, text)
+
+    changed = 0
+
+    def repl(match: re.Match[str]) -> str:
+        nonlocal changed
+        out = replacement(match)
+        changed += out != match.group(0)
+        return out
+
+    return pattern.regex.sub(repl, text), changed

@@ -1,6 +1,11 @@
 import pytest
 
-from app.services.secret_redactor import REDACTED, SecretRedactor
+from app.services.secret_redactor import (
+    ENTROPY_THRESHOLD,
+    REDACTED,
+    SecretRedactor,
+    shannon_entropy,
+)
 
 
 @pytest.fixture
@@ -226,6 +231,46 @@ def test_webhook_secret_inside_env_var_is_redacted(redactor: SecretRedactor) -> 
     result = redactor.redact(line)
 
     assert result.text == f"SLACK_WEBHOOK_URL=https://hooks.slack.com/services/{REDACTED}"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "aBcD3fGh1jKlMn0pQrStUvWxYz2AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOp+w==",
+        "cGFzc3dvcmQxMjM0NTY3ODkw",  # base64("password1234567890")
+        "Q8zT4vN2mK7pL9xW3cR6bH1j",
+    ],
+)
+def test_random_looking_values_without_any_name_are_redacted(
+    redactor: SecretRedactor, value: str
+) -> None:
+    result = redactor.redact(f"connecting with {value} to storage")
+
+    assert result.text == f"connecting with {REDACTED} to storage"
+    assert result.counts == {"high_entropy": 1}
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "pod payment-service-6f7d8c9b5-k2x9q restarted",  # lowercase + digits only
+        "commit 3f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39",  # hex
+        "uid 550e8400-e29b-41d4-a716-446655440000",  # hex with dashes
+        "at com.example.PaymentServiceV2Controller.handle",  # CamelCase identifier
+        "integrity sha512-AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKlMnOpQrStUvWxYz01==",
+        "tag jenkins-payment-service-1432",
+        "ARTIFACT=target/payment-service-1.4.2.jar",  # found by the sample-log audit
+        "npm/_logs/2026-09-16T07_20_04_905Z-debug-0.log",  # found by the sample-log audit
+    ],
+)
+def test_identifiers_and_hashes_are_not_random_enough(redactor: SecretRedactor, line: str) -> None:
+    assert redactor.redact(line).text == line
+
+
+def test_entropy_of_repeated_and_random_text() -> None:
+    assert shannon_entropy("aaaa") == 0.0
+    assert shannon_entropy("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY") > ENTROPY_THRESHOLD
+    assert shannon_entropy("3f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39") < ENTROPY_THRESHOLD
 
 
 def test_bare_aws_key_pair_is_fully_redacted(redactor: SecretRedactor) -> None:
