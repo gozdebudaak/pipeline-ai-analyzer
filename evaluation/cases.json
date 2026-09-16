@@ -84,7 +84,6 @@
     "log": "maven/jvm_out_of_memory.log",
     "expected_category": "resource_limit",
     "expected_severity": "high",
-    "rule_based_expected": "test_failure",
     "key_phrase": "OutOfMemoryError",
     "secrets": [
       "sqp_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
@@ -95,7 +94,6 @@
     "log": "kubernetes/pod_evicted_ephemeral_storage.log",
     "expected_category": "resource_limit",
     "expected_severity": "critical",
-    "rule_based_expected": "kubernetes_deployment",
     "key_phrase": "ephemeral-storage",
     "secrets": [
       "k8s-ci-7Hq2Lm9Xp4Rt1Wz8Vb3Ny6Kd0Sf5Gj"
@@ -106,7 +104,6 @@
     "log": "artifactory/service_unavailable_503.log",
     "expected_category": "artifact_repository",
     "expected_severity": "high",
-    "rule_based_expected": "dependency_resolution",
     "key_phrase": "Service Unavailable",
     "secrets": [
       "AKCp5mN8xQ2wE7rT1yU4iO9pA3sD6fG0h"

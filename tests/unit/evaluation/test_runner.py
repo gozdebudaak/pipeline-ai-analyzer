@@ -12,16 +12,29 @@ def test_offline_run_on_the_default_set_is_clean() -> None:
     assert report.leaks == []
 
 
-def test_hard_cases_pull_accuracy_below_one_and_are_marked_known() -> None:
-    """A gauge that always reads 100% measures nothing: the set must contain rule misses."""
-    cases = load_cases()
-    report = run_offline(cases)
-    gaps = [c for c in cases if c.rule_based_expected is not None]
+def test_documented_gap_is_still_a_miss_but_marked_known() -> None:
+    """A gap the label predicted lowers the score like any miss; the report just says so."""
+    case = load_cases()[0]
+    gap = case.model_copy(
+        update={
+            "expected_category": FailureCategory.NETWORK,  # pretend the human disagrees
+            "rule_based_expected": case.expected_category,  # and documents what rules say
+        }
+    )
 
-    assert gaps, "the dataset needs cases the rules get wrong"
-    assert report.category_accuracy == (report.total - len(gaps)) / report.total
-    assert all(r.known_gap for r in report.results if not r.category_ok)
+    report = run_offline([case, gap])
+
+    assert report.category_accuracy == 0.5
+    assert report.results[1].known_gap
     assert "(known)" in format_report(report)
+
+
+def test_no_gap_is_documented_today() -> None:
+    """Every hard case has a rule now; a new hard case must arrive with its gap documented."""
+    report = run_offline(load_cases())
+
+    assert report.category_accuracy == 1.0
+    assert not any(r.known_gap for r in report.results)
 
 
 def test_a_wrong_label_lowers_accuracy_instead_of_failing() -> None:

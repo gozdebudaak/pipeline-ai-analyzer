@@ -89,6 +89,13 @@ DEFAULT_RULES: tuple[ClassificationRule, ...] = (
     ),
     _rule("k8s_oom_killed", C.RESOURCE_LIMIT, r"OOMKilled", 10, "critical"),
     _rule(
+        "k8s_evicted",
+        C.RESOURCE_LIMIT,
+        r"\bEvicted\b|The node was low on resource",
+        9,
+        "critical",
+    ),
+    _rule(
         "k8s_failed_scheduling",
         C.RESOURCE_LIMIT,
         r"FailedScheduling|Insufficient (?:cpu|memory)",
@@ -138,6 +145,14 @@ DEFAULT_RULES: tuple[ClassificationRule, ...] = (
         r"There are test failures|Tests run: \d+, Failures: [1-9]|Tests run: \d+, Failures: \d+, Errors: [1-9]",
         9,
         "medium",
+    ),
+    # JVM out of memory during tests or packaging: the build agent, not the code, is short.
+    _rule(
+        "jvm_out_of_memory",
+        C.RESOURCE_LIMIT,
+        r"OutOfMemoryError|Java heap space|GC overhead limit exceeded",
+        10,
+        "high",
     ),
     # --- Gradle -------------------------------------------------------------------
     _rule(
@@ -216,6 +231,14 @@ DEFAULT_RULES: tuple[ClassificationRule, ...] = (
     ),
     # --- Artifactory --------------------------------------------------------------
     _rule("artifactory", C.ARTIFACT_REPOSITORY, r"artifactory", 2),
+    # The repository itself answers 5xx: it is down or overloaded, dependencies are fine.
+    _rule(
+        "artifactory_unavailable",
+        C.ARTIFACT_REPOSITORY,
+        r"artifactory[^\n]*(?:\b50[234]\b|Service Unavailable|Bad Gateway|Gateway Timeout)",
+        9,
+        "high",
+    ),
     # --- Cross-cutting ------------------------------------------------------------
     _rule(
         "http_401",

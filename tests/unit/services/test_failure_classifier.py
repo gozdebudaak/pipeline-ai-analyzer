@@ -151,6 +151,21 @@ def classifier() -> FailureClassifier:
             "disk_full",
         ),
         (
+            "report-api-5b8c7d9f4-q2w8x    0/1     Evicted   0          4m",
+            FailureCategory.RESOURCE_LIMIT,
+            "k8s_evicted",
+        ),
+        (
+            "java.lang.OutOfMemoryError: Java heap space",
+            FailureCategory.RESOURCE_LIMIT,
+            "jvm_out_of_memory",
+        ),
+        (
+            "Could not transfer artifact com.example:lib:pom:1.0 from/to artifactory (https://artifactory.example.com): status code: 503, reason phrase: Service Unavailable (503)",
+            FailureCategory.ARTIFACT_REPOSITORY,
+            "artifactory_unavailable",
+        ),
+        (
             "write /var/lib/docker/tmp/GetImageBlob123: no space left on device",
             FailureCategory.RESOURCE_LIMIT,
             "disk_full",
@@ -223,6 +238,34 @@ def test_two_definite_signals_of_one_category_add_up(classifier: FailureClassifi
     assert result.scores[FailureCategory.KUBERNETES_DEPLOYMENT] == 18
 
 
+def test_out_of_memory_beats_the_test_failure_it_causes(classifier: FailureClassifier) -> None:
+    """The eval set's maven-jvm-oom case: tests died because the JVM ran out of heap."""
+    lines = [
+        "[ERROR] Tests run: 3, Failures: 0, Errors: 3, Skipped: 0 <<< FAILURE!",
+        "java.lang.OutOfMemoryError: Java heap space",
+        "[ERROR] There are test failures.",
+    ]
+
+    result = classifier.classify(lines)
+
+    assert result.category is FailureCategory.RESOURCE_LIMIT
+    assert (
+        result.scores[FailureCategory.RESOURCE_LIMIT] > result.scores[FailureCategory.TEST_FAILURE]
+    )
+
+
+def test_repository_outage_beats_the_dependency_symptom(classifier: FailureClassifier) -> None:
+    """The eval set's artifactory-503 case: nothing resolves because the repository is down."""
+    lines = [
+        "[ERROR] Could not resolve dependencies for project com.example:billing-service:jar:5.0.3",
+        "[ERROR] Could not transfer artifact com.example:lib:pom:1.0 from/to artifactory (https://artifactory.example.com): status code: 503, reason phrase: Service Unavailable (503)",
+    ]
+
+    result = classifier.classify(lines)
+
+    assert result.category is FailureCategory.ARTIFACT_REPOSITORY
+
+
 def test_registry_denied_beats_generic_access_denied(classifier: FailureClassifier) -> None:
     """'pull access denied' matches both rules; the registry-specific one must win."""
     line = "Error response from daemon: pull access denied for registry.example.com/app"
@@ -243,6 +286,10 @@ def test_registry_denied_beats_generic_access_denied(classifier: FailureClassifi
         ("[ERROR] COMPILATION ERROR :", "medium"),
         ("[ERROR] There are test failures.", "medium"),
         ("OSError: [Errno 28] No space left on device", "high"),
+        (
+            "Warning  Evicted  3m  kubelet  The node was low on resource: ephemeral-storage",
+            "critical",
+        ),
     ],
 )
 def test_rule_based_severity(classifier: FailureClassifier, line: str, severity: str) -> None:
