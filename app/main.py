@@ -3,8 +3,8 @@ import logging
 from fastapi import FastAPI
 
 from app.api.errors import register_error_handlers
-from app.api.middleware import correlation_id_middleware
-from app.api.routes import analyze, health
+from app.api.middleware import correlation_id_middleware, metrics_middleware
+from app.api.routes import analyze, health, metrics
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.llm.factory import LLMConfigurationError, build_llm_provider
@@ -47,9 +47,11 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name, version=settings.app_version)
     app.state.analysis_service = build_analysis_service(settings)
     app.middleware("http")(correlation_id_middleware)
+    app.middleware("http")(metrics_middleware)
     register_error_handlers(app)
     app.include_router(health.router)
     app.include_router(analyze.router)
+    app.include_router(metrics.router)
     return app
 
 
