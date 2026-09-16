@@ -18,13 +18,19 @@ from app.services.prompt_builder import Prompt
 class LLMError(Exception):
     """Base class for anything that goes wrong while talking to a model."""
 
+    metric_outcome = "llm_error"  # label value in analysis_total; a small fixed set
+
 
 class LLMUnavailableError(LLMError):
     """The provider could not be reached or refused the request (network, auth, rate limit)."""
 
+    metric_outcome = "llm_unavailable"
+
 
 class LLMInvalidResponseError(LLMError):
     """The provider answered, but the answer does not fit the result schema."""
+
+    metric_outcome = "llm_invalid_response"
 
 
 @dataclass(frozen=True)

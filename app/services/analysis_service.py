@@ -9,9 +9,18 @@ is testable with the fake provider.
 """
 
 import logging
+import time
 from dataclasses import dataclass
 
-from app.llm.base import LLMProvider
+from app.core.metrics import (
+    ANALYSES,
+    ANALYSIS_CATEGORIES,
+    EXCERPT_TOKENS,
+    LLM_REQUEST_DURATION,
+    LLM_TOKENS,
+    SECRETS_REDACTED,
+)
+from app.llm.base import LLMError, LLMProvider
 from app.schemas.analysis import AnalysisResult
 from app.services.failure_classifier import (
     Classification,
@@ -75,6 +84,12 @@ def reconcile(
     return adjusted, False
 
 
+def _agreement_label(agreement: bool | None) -> str:
+    if agreement is None:
+        return "no_rule_opinion"
+    return "agree" if agreement else "disagree"
+
+
 class AnalysisService:
     def __init__(
         self,
@@ -96,12 +111,29 @@ class AnalysisService:
             raise ValueError("log is empty")
 
         redacted = self._redactor.redact(raw_log)
+        for pattern_name, count in redacted.counts.items():
+            SECRETS_REDACTED.labels(pattern_name).inc(count)
         processed = self._processor.process(redacted.text)
+        EXCERPT_TOKENS.observe(processed.estimated_tokens)
         classification = self._classifier.classify(processed.error_lines)
         prompt = self._prompt_builder.build(processed.excerpt)
 
-        response = await self._provider.analyze(prompt)
+        started = time.perf_counter()
+        try:
+            response = await self._provider.analyze(prompt)
+        except LLMError as exc:
+            ANALYSES.labels(exc.metric_outcome).inc()
+            raise
+        finally:
+            LLM_REQUEST_DURATION.labels(self._provider.name).observe(time.perf_counter() - started)
+        if response.input_tokens is not None:
+            LLM_TOKENS.labels(self._provider.name, "input").inc(response.input_tokens)
+        if response.output_tokens is not None:
+            LLM_TOKENS.labels(self._provider.name, "output").inc(response.output_tokens)
+
         result, agreement = reconcile(response.result, classification)
+        ANALYSES.labels("success").inc()
+        ANALYSIS_CATEGORIES.labels(result.category.value, _agreement_label(agreement)).inc()
         severity_agreement = (
             None if classification.severity is None else classification.severity == result.severity
         )
