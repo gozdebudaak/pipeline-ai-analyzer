@@ -249,6 +249,7 @@ DEFAULT_RULES: tuple[ClassificationRule, ...] = (
         7,
         "medium",
     ),
+    _rule("disk_full", C.RESOURCE_LIMIT, r"No space left on device|ENOSPC", 8, "high"),
     _rule(
         "missing_env_var",
         C.CONFIGURATION,

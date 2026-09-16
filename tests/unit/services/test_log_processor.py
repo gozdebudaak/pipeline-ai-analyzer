@@ -327,6 +327,7 @@ def test_token_budget_limits_the_excerpt() -> None:
         "48 tests completed, 1 failed",
         "fatal: not a git repository (or any of the parent directories): .git",
         "error: failed to solve: process did not complete successfully",  # docker buildx
+        "write /var/lib/docker/tmp/GetImageBlob123: no space left on device",  # no ERROR word
     ],
 )
 def test_error_lines_are_detected(line: str) -> None:

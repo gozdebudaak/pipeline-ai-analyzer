@@ -242,7 +242,8 @@ ERROR_PATTERNS: tuple[re.Pattern[str], ...] = (
     ),
     re.compile(
         r"\b(?:Unauthorized|Forbidden|access denied|permission denied|"
-        r"Permission denied|command not found|No such file or directory)\b",
+        r"Permission denied|command not found|No such file or directory|"
+        r"No space left on device|ENOSPC)\b",
         re.IGNORECASE,
     ),
     re.compile(

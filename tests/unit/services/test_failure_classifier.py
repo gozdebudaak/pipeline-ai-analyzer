@@ -145,6 +145,16 @@ def classifier() -> FailureClassifier:
             FailureCategory.CONFIGURATION,
             "helm_values_invalid",
         ),
+        (
+            "OSError: [Errno 28] No space left on device",
+            FailureCategory.RESOURCE_LIMIT,
+            "disk_full",
+        ),
+        (
+            "write /var/lib/docker/tmp/GetImageBlob123: no space left on device",
+            FailureCategory.RESOURCE_LIMIT,
+            "disk_full",
+        ),
     ],
 )
 def test_single_line_classification(
@@ -232,6 +242,7 @@ def test_registry_denied_beats_generic_access_denied(classifier: FailureClassifi
         ("[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.", "high"),
         ("[ERROR] COMPILATION ERROR :", "medium"),
         ("[ERROR] There are test failures.", "medium"),
+        ("OSError: [Errno 28] No space left on device", "high"),
     ],
 )
 def test_rule_based_severity(classifier: FailureClassifier, line: str, severity: str) -> None:
