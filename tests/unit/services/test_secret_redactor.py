@@ -167,6 +167,30 @@ def test_known_token_prefixes(redactor: SecretRedactor, token: str) -> None:
     assert result.counts == {"known_token_prefix": 1}
 
 
+def test_bare_aws_key_pair_is_fully_redacted(redactor: SecretRedactor) -> None:
+    """The id has a prefix (AKIA), the secret has none: only its 40-char shape gives it away."""
+    line = "creds: AKIAIOSFODNN7EXAMPLE / wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+    result = redactor.redact(line)
+
+    assert result.text == f"creds: {REDACTED} / {REDACTED}"
+    assert result.counts == {"known_token_prefix": 1, "aws_secret_key": 1}
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "commit 3f2a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a39 (HEAD -> main)",  # git SHA-1: 40 hex
+        "Digest: sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "image pushed with id 2f1a9c1e8b7d6a5f4e3d2c1b0a9f8e7d6c5b4a3f9e8d7c6b",  # 48 chars
+    ],
+)
+def test_hashes_and_long_blobs_are_not_mistaken_for_aws_secrets(
+    redactor: SecretRedactor, line: str
+) -> None:
+    assert redactor.redact(line).text == line
+
+
 def test_private_key_block_is_removed_entirely(redactor: SecretRedactor) -> None:
     text = (
         "Loading key\n"

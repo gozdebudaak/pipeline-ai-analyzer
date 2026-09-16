@@ -118,6 +118,14 @@ DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
         ),
         replacement=REDACTED,
     ),
+    SecretPattern(
+        name="aws_secret_key",
+        regex=re.compile(
+            r"(?<![A-Za-z0-9/+=])(?![0-9a-fA-F]{40}(?![A-Za-z0-9/+=]))"
+            r"[A-Za-z0-9/+]{40}(?![A-Za-z0-9/+=])"
+        ),
+        replacement=REDACTED,
+    ),
     # Generic  KEY=value / KEY: value / --key value / "key": "value"
     # The key name is kept, only the value is replaced.
     SecretPattern(
