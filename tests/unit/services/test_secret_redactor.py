@@ -167,6 +167,26 @@ def test_known_token_prefixes(redactor: SecretRedactor, token: str) -> None:
     assert result.counts == {"known_token_prefix": 1}
 
 
+def test_kubeconfig_data_fields_are_redacted(redactor: SecretRedactor) -> None:
+    kubeconfig = (
+        "clusters:\n"
+        "- cluster:\n"
+        "    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM4akNDQWRxZ0F3\n"
+        "    server: https://10.0.0.1:6443\n"
+        "users:\n"
+        "- user:\n"
+        "    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM4akNDQWRx\n"
+        "    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVB\n"
+    )
+
+    result = redactor.redact(kubeconfig)
+
+    assert "LS0t" not in result.text
+    assert "server: https://10.0.0.1:6443" in result.text
+    assert f"client-key-data: {REDACTED}" in result.text
+    assert result.counts == {"key_value": 3}
+
+
 def test_bare_aws_key_pair_is_fully_redacted(redactor: SecretRedactor) -> None:
     """The id has a prefix (AKIA), the secret has none: only its 40-char shape gives it away."""
     line = "creds: AKIAIOSFODNN7EXAMPLE / wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

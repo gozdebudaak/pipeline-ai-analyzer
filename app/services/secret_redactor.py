@@ -43,7 +43,9 @@ class RedactionResult:
 _KEY_NAME_ALTERNATION = (
     r"password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|auth[_-]?token|"
     r"client[_-]?secret|private[_-]?key|credentials?|secret[_-]?access[_-]?key|"
-    r"session[_-]?key|encryption[_-]?key|signing[_-]?key"
+    r"session[_-]?key|encryption[_-]?key|signing[_-]?key|"
+    r"certificate[_-]?data|key[_-]?data|certificate[_-]?authority[_-]?data|"
+    r"private[_-]?key[_-]?id"
 )
 
 DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
