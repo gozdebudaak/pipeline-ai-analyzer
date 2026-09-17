@@ -54,6 +54,8 @@ def strict_schema(model: type[AnalysisResult]) -> dict[str, Any]:
 
     def clean(node: Any) -> Any:
         if isinstance(node, dict):
+            if "$ref" in node:
+                return {"$ref": node["$ref"]}
             cleaned = {k: clean(v) for k, v in node.items() if k not in _UNSUPPORTED_KEYWORDS}
             if cleaned.get("type") == "object" and "properties" in cleaned:
                 cleaned["required"] = list(cleaned["properties"])

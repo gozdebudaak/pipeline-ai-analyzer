@@ -157,6 +157,24 @@ def test_strict_schema_requires_every_field_and_drops_unsupported_keywords() -> 
     walk(schema)
 
 
+def test_strict_schema_never_puts_keywords_next_to_a_ref() -> None:
+    """The first real OpenAI call failed with: $ref cannot have keywords {'description'}."""
+    schema = strict_schema(AnalysisResult)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if "$ref" in node:
+                assert set(node) == {"$ref"}, node
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(schema)
+    assert schema["properties"]["category"] == {"$ref": "#/$defs/FailureCategory"}
+
+
 def test_strict_schema_keeps_the_category_enum() -> None:
     schema = strict_schema(AnalysisResult)
 
