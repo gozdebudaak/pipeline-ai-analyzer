@@ -7,20 +7,23 @@ relevant error sections from logs, identifies probable root causes and suggests
 remediation steps. Designed as a production-oriented platform component, not a
 thin LLM wrapper.
 
-> Status: **MVP 1 — AI log analyzer** is implemented: `POST /api/v1/analyze`
-> takes a raw CI/CD log and returns a validated, structured analysis. The
-> pipeline is secret redaction → log preprocessing → rule-based
-> classification → LLM analysis → schema validation → reconciliation.
+> Status: **MVP 2 — intelligence** is complete and verified against the real
+> model. `POST /api/v1/analyze` takes a raw CI/CD log and returns a validated,
+> structured analysis: secret redaction → log preprocessing → rule-based
+> classification → LLM analysis → schema validation → reconciliation. A
+> labelled evaluation set (`make eval`, `make eval-llm`) scores the rules and
+> the model, and `GET /metrics` exposes Prometheus metrics. Next: MVP 3,
+> Jenkins integration.
 
 ## Roadmap
 
-| Milestone | Scope |
-|-----------|-------|
-| MVP 0 | FastAPI skeleton, config, structured logging, health/ready, Docker, CI |
-| MVP 1 | `POST /api/v1/analyze`, secret redaction, log preprocessing, OpenAI provider |
-| MVP 2 | Smarter preprocessing, rule-based severity, wider redaction, evaluation set, Prometheus metrics |
-| MVP 3 | Jenkins integration (REST + webhooks) |
-| MVP 4 | PostgreSQL persistence, analysis history, Helm chart |
+| Milestone | Scope | Status |
+|-----------|-------|--------|
+| MVP 0 | FastAPI skeleton, config, structured logging, health/ready, Docker, CI | done |
+| MVP 1 | `POST /api/v1/analyze`, secret redaction, log preprocessing, OpenAI provider | done, verified end to end with `gpt-5.4-mini` |
+| MVP 2 | Smarter preprocessing, rule-based severity, wider redaction, evaluation set, Prometheus metrics | done (11 labelled cases, rules 100 %, model 82-91 % category) |
+| MVP 3 | Jenkins integration (REST + webhooks) | next |
+| MVP 4 | PostgreSQL persistence, analysis history, Helm chart | planned |
 
 ## Requirements
 
@@ -113,22 +116,30 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/analyze \
   -d '{"log": "[ERROR] Return code is: 401, ReasonPhrase: Unauthorized.", "source": "jenkins", "metadata": {"job": "payment-service", "build": "142"}}'
 ```
 
-Response (abridged):
+Response for `sample_logs/maven/dependency_resolution_401.log`, abridged from a
+real run:
 
 ```json
 {
-  "request_id": "69d0db29-...",
+  "request_id": "3375caf9-...",
   "analysis": {
     "status": "failed", "category": "authentication", "severity": "high",
-    "summary": "...", "root_cause": "...", "confidence": 0.9,
-    "evidence": ["401 Unauthorized"],
-    "suggested_actions": ["Verify the repository credentials configured in the pipeline."]
+    "summary": "The Maven build failed during dependency resolution because Artifactory returned 401 Unauthorized ...",
+    "root_cause": "The credentials or credential wiring used by Maven to access Artifactory are not being accepted ...",
+    "confidence": 0.97,
+    "evidence": ["status code: 401, reason phrase: Unauthorized (401)", "Could not transfer metadata com.example.platform:payment-commons:2.9.0/maven-metadata.xml from/to artifactory"],
+    "suggested_actions": ["Verify that the Jenkins job is injecting the correct Artifactory username and password into Maven's settings.xml ...", "..."]
   },
-  "rule_based": {"category": "authentication", "matched_rules": ["http_401"], "agrees_with_model": true},
-  "log_stats": {"total_lines": 57, "normalized_lines": 33, "excerpt_lines": 33, "estimated_tokens": 640, "truncated": false, "secrets_redacted": 4},
-  "llm": {"provider": "openai", "model": "gpt-5.4-mini", "input_tokens": 1512, "output_tokens": 290, "prompt_version": "1"}
+  "rule_based": {"category": "authentication", "matched_rules": ["maven_dependency", "artifactory", "http_401"], "agrees_with_model": true, "severity": "high", "severity_agrees_with_model": true},
+  "log_stats": {"total_lines": 57, "normalized_lines": 33, "excerpt_lines": 33, "estimated_tokens": 571, "truncated": false, "secrets_redacted": 4},
+  "llm": {"provider": "openai", "model": "gpt-5.4-mini-2026-03-17", "input_tokens": 1197, "output_tokens": 416, "prompt_version": "2"}
 }
 ```
+
+`estimated_tokens` counts the excerpt only; `input_tokens` also includes the
+system prompt and the JSON schema, a fixed overhead of roughly 600 tokens per
+request. `prompt_version` records which prompt produced the analysis, so
+results from different prompt versions are never compared by accident.
 
 | Endpoint | Purpose |
 |----------|---------|
