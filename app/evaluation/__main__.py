@@ -10,6 +10,7 @@ import asyncio
 import sys
 
 from app.core.config import get_settings
+from app.evaluation.calibration import format_factor_line, format_gap_table, gap_profile
 from app.evaluation.dataset import load_cases
 from app.evaluation.runner import format_report, run_offline, run_with_llm
 from app.main import build_analysis_service
@@ -18,9 +19,15 @@ from app.main import build_analysis_service
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.evaluation")
     parser.add_argument("--llm", action="store_true", help="also ask the configured LLM")
+    parser.add_argument(
+        "--gaps", action="store_true", help="print how many pause markers each threshold would add"
+    )
     args = parser.parse_args(argv)
 
     cases = load_cases()
+    if args.gaps:
+        print(format_gap_table([gap_profile(case) for case in cases]))
+        return 0
     if args.llm:
         service = build_analysis_service(get_settings())
         if service is None:
@@ -31,6 +38,8 @@ def main(argv: list[str] | None = None) -> int:
         report = run_offline(cases)
 
     print(format_report(report))
+    if args.llm:
+        print(format_factor_line(report))
     return 1 if report.leaks else 0  # accuracy may drop; a leak may not
 
 

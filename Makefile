@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test check eval eval-llm run docker-up docker-down
+.PHONY: install lint format typecheck test check eval eval-llm eval-gaps run docker-up docker-down
 
 install:
 	uv sync --group dev
@@ -24,6 +24,9 @@ eval:  ## score the rule-based chain on evaluation/cases.json (offline, no LLM)
 
 eval-llm:  ## same, plus the configured model's answer per case (costs money outside APP_ENV=test)
 	uv run python -m app.evaluation --llm
+
+eval-gaps:  ## how many "[gap]" markers each candidate threshold would insert per sample log
+	uv run python -m app.evaluation --gaps
 
 run:
 	uv run uvicorn app.main:app --reload
