@@ -93,11 +93,12 @@
     "id": "k8s-pod-evicted",
     "log": "kubernetes/pod_evicted_ephemeral_storage.log",
     "expected_category": "resource_limit",
-    "expected_severity": "critical",
+    "expected_severity": "high",
     "key_phrase": "ephemeral-storage",
     "secrets": [
       "k8s-ci-7Hq2Lm9Xp4Rt1Wz8Vb3Ny6Kd0Sf5Gj"
-    ]
+    ],
+    "label_note": "high, not critical: the old replica stayed 1/1 Running, only the rollout was blocked"
   },
   {
     "id": "artifactory-503",
