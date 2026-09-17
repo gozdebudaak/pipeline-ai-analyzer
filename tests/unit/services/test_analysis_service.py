@@ -7,7 +7,7 @@ from app.llm.fake import DEFAULT_FAKE_RESULT, FakeLLMProvider
 from app.services.analysis_service import AnalysisService, reconcile
 from app.services.failure_classifier import Classification, FailureCategory, FailureClassifier
 from app.services.log_processor import LogProcessor
-from app.services.prompt_builder import PromptBuilder
+from app.services.prompt_builder import PROMPT_VERSION, PromptBuilder
 from app.services.secret_redactor import SecretRedactor
 
 SAMPLE = (
@@ -45,7 +45,7 @@ async def test_full_chain_on_sample_log() -> None:
     assert outcome.log_stats.secrets_redacted >= 1
     assert outcome.log_stats.total_lines > outcome.log_stats.excerpt_lines
     assert outcome.llm_provider == "fake"
-    assert outcome.prompt_version == "1"
+    assert outcome.prompt_version == PROMPT_VERSION
 
 
 async def test_the_provider_never_sees_the_secret() -> None:

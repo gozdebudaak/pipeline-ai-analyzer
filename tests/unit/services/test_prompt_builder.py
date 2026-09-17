@@ -57,3 +57,14 @@ def test_prompt_carries_a_version() -> None:
 def test_empty_excerpt_is_rejected(empty: str) -> None:
     with pytest.raises(ValueError):
         PromptBuilder().build(empty)
+
+
+def test_system_prompt_defines_severity_bands() -> None:
+    """Prompt v2: the first real eval run showed the model saying 'high' for every case."""
+    system = PromptBuilder().build(EXCERPT).system
+
+    for band in ("critical:", "high:", "medium:", "low:"):
+        assert band in system
+    assert "Most build failures are medium" in system
+    assert "without surrounding quotation marks" in system
+    assert PROMPT_VERSION == "2"
